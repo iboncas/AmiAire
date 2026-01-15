@@ -1,0 +1,4 @@
+pymongo
+minio
+python-dotenv
+tqdm
