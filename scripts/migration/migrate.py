@@ -56,6 +56,20 @@ for record in tqdm(data, desc="Migrating records", unit="record"):
         # Add MinIO reference to document
         record["Imagen de entrada"] = f"http://localhost:9000/{bucket_name}/{object_name}"
 
+        # Transform schema: Rename "Concentración estándar" to "PM10"
+        if "Concentración estándar" in record:
+            record["PM10"] = record.pop("Concentración estándar")
+
+        # Create "PM2.5" as duplicate of "PM10"
+        if "PM10" in record:
+            record["PM2.5"] = record["PM10"]
+
+        # Split "Nivel de polución" into two attributes
+        if "Nivel de polución" in record:
+            pollution_level = record.pop("Nivel de polución")
+            record["Nivel de polución PM10"] = pollution_level
+            record["Nivel de polución PM2.5"] = pollution_level
+
         # Fix MongoDB ObjectId if present
         if "_id" in record and isinstance(record["_id"], dict) and "$oid" in record["_id"]:
             record["_id"] = ObjectId(record["_id"]["$oid"])
