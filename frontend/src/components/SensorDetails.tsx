@@ -35,7 +35,12 @@ export default function SensorDetails({ sensor }: SensorDetailsProps) {
                     <strong>Nombre:</strong> {sensor.nombre}
                 </p>
                 <p>
-                    <strong>Categoría:</strong> {getCategoria(sensor)}
+                    <strong>Categoría:</strong>{' '}
+                    {sensor.type === 'official'
+                        ? 'Oficial'
+                        : sensor.type === 'diy'
+                            ? 'DIY'
+                            : getCategoria(sensor)}
                 </p>
                 <p>
                     <strong>Concentración PM2.5:</strong>{' '}

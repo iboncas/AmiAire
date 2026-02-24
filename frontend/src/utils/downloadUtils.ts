@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
 import type { Sensor } from '../types/sensor';
+import { formatDate } from './dateUtils';
 
 export function downloadCSV(sensors: Sensor[]): void {
     if (!sensors.length) {
@@ -14,7 +15,8 @@ export function downloadCSV(sensors: Sensor[]): void {
         'longitud',
         'fechaInicio',
         'fechaRecogida',
-        'nivelPolucion',
+        'PM10',
+        'PM2.5',
     ];
     const rows = sensors.map((s) =>
         [
@@ -22,9 +24,10 @@ export function downloadCSV(sensors: Sensor[]): void {
             s.nombre,
             s.ubicacion.latitud,
             s.ubicacion.longitud,
-            s.fechaInicio,
-            s.fechaRecogida,
-            s.nivelPolucion,
+            formatDate(s.fechaInicio),
+            formatDate(s.fechaRecogida),
+            typeof s.metricas?.pm10 === 'number' ? s.metricas.pm10.toFixed(1) : 'N/A',
+            typeof s.metricas?.pm25 === 'number' ? s.metricas.pm25.toFixed(1) : 'N/A',
         ].join(',')
     );
 
@@ -34,7 +37,13 @@ export function downloadCSV(sensors: Sensor[]): void {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `sensores_${Date.now()}.csv`;
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const hh = String(now.getHours()).padStart(2, '0');
+    const min = String(now.getMinutes()).padStart(2, '0');
+    link.download = `data_${yyyy}${mm}${dd}${hh}${min}.csv`;
     link.click();
     URL.revokeObjectURL(url);
 }
