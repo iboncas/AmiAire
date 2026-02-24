@@ -2,11 +2,14 @@ import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet.heat';
 import type { Sensor } from '../../types/sensor';
-import { getColor, getCategoria, getWeight } from '../../utils/sensorUtils';
+import { getColor, getCategoria, getColorByConcentration, getWeight } from '../../utils/sensorUtils';
 
 interface MapContainerProps {
     sensors: Sensor[];
+    heatmapSensors?: Sensor[];
     showHeatmap: boolean;
+    showPM10?: boolean;
+    showPM25?: boolean;
     center?: [number, number];
     zoom?: number;
     radiusCircle?: {
@@ -18,7 +21,10 @@ interface MapContainerProps {
 
 export default function MapContainer({
     sensors,
+    heatmapSensors,
     showHeatmap,
+    showPM10 = true,
+    showPM25 = true,
     center = [40.4168, -3.7038],
     zoom = 5,
     radiusCircle,
@@ -72,14 +78,54 @@ export default function MapContainer({
                 !isFinite(longitud)
             ) return;
 
-            const marker = L.circleMarker([latitud, longitud], {
-                radius: 8,
-                fillColor: getColor(sensor),
-                color: '#333',
-                weight: 1,
-                opacity: 1,
-                fillOpacity: 0.75,
-            });
+            const isOfficial = sensor.type === 'official';
+            const pm25Value =
+                typeof sensor.metricas?.pm25 === 'number' && Number.isFinite(sensor.metricas.pm25)
+                    ? sensor.metricas.pm25
+                    : null;
+            const pm10Value =
+                typeof sensor.metricas?.pm10 === 'number' && Number.isFinite(sensor.metricas.pm10)
+                    ? sensor.metricas.pm10
+                    : null;
+
+            const pm25Color = getColorByConcentration(pm25Value);
+            const pm10Color = getColorByConcentration(pm10Value);
+            const pm25Valid = pm25Color !== '#999';
+            const pm10Valid = pm10Color !== '#999';
+
+            let triangleBackground = '#999';
+            if (showPM10 && showPM25) {
+                if (pm10Valid && pm25Valid) {
+                    triangleBackground = `linear-gradient(90deg, ${pm10Color} 0 50%, ${pm25Color} 50% 100%)`;
+                } else if (pm10Valid) {
+                    triangleBackground = pm10Color;
+                } else if (pm25Valid) {
+                    triangleBackground = pm25Color;
+                }
+            } else if (showPM25 && pm25Valid) {
+                triangleBackground = pm25Color;
+            } else if (showPM10 && pm10Valid) {
+                triangleBackground = pm10Color;
+            }
+
+            const marker = isOfficial
+                ? L.marker([latitud, longitud], {
+                    icon: L.divIcon({
+                        className: 'official-triangle-icon',
+                        html: `<div class="official-triangle" style="background:${triangleBackground};"></div>`,
+                        iconSize: [18, 16],
+                        iconAnchor: [9, 14],
+                        popupAnchor: [0, -12],
+                    }),
+                })
+                : L.circleMarker([latitud, longitud], {
+                    radius: 8,
+                    fillColor: getColor(sensor),
+                    color: '#333',
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.75,
+                });
 
             marker.bindPopup(
                 `<strong>ID:</strong> ${sensor.id}<br>` +
@@ -99,7 +145,8 @@ export default function MapContainer({
     useEffect(() => {
         if (!mapRef.current) return;
 
-        const heatData = sensors
+        const sourceSensors = Array.isArray(heatmapSensors) ? heatmapSensors : sensors;
+        const heatData = sourceSensors
             .filter(s =>
                 s.ubicacion &&
                 typeof s.ubicacion.latitud === 'number' &&
@@ -131,8 +178,11 @@ export default function MapContainer({
                     1: '#ff0000',
                 },
             });
+            if (showHeatmap) {
+                heatLayerRef.current.addTo(mapRef.current);
+            }
         }
-    }, [sensors]);
+    }, [sensors, heatmapSensors, showHeatmap]);
 
     // Toggle between normal and heatmap view
     useEffect(() => {

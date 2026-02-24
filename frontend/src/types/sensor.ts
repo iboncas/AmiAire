@@ -8,10 +8,15 @@ export interface Sensor {
     nivelPolucion: string;
     metricas?: {
         concentracion?: number;
+        pm10?: number | null;
+        pm25?: number | null;
     };
     fechaInicio: string;
     fechaRecogida: string;
     imagen?: string;
+    type?: 'diy' | 'official';
+    hasPM10?: boolean;
+    hasPM25?: boolean;
 }
 
 export interface FilterOptions {

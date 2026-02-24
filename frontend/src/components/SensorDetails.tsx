@@ -38,8 +38,16 @@ export default function SensorDetails({ sensor }: SensorDetailsProps) {
                     <strong>Categoría:</strong> {getCategoria(sensor)}
                 </p>
                 <p>
-                    <strong>Concentración:</strong>{' '}
-                    {sensor.metricas?.concentracion?.toFixed(1) ?? '–'} μg/m³
+                    <strong>Concentración PM2.5:</strong>{' '}
+                    {typeof sensor.metricas?.pm25 === 'number'
+                        ? `${sensor.metricas.pm25.toFixed(1)} μg/m³`
+                        : 'N/A'}
+                </p>
+                <p>
+                    <strong>Concentración PM10:</strong>{' '}
+                    {typeof sensor.metricas?.pm10 === 'number'
+                        ? `${sensor.metricas.pm10.toFixed(1)} μg/m³`
+                        : 'N/A'}
                 </p>
                 <p>
                     <strong>Ubicación:</strong> {sensor.ubicacion.latitud.toFixed(4)},{' '}
@@ -51,13 +59,6 @@ export default function SensorDetails({ sensor }: SensorDetailsProps) {
                 <p>
                     <strong>Fecha Recogida:</strong> {formatDate(sensor.fechaRecogida)}
                 </p>
-                {sensor.imagen && (
-                    <img
-                        src={sensor.imagen}
-                        alt={`Sensor ${sensor.id}`}
-                        className="max-w-full max-h-[300px] rounded-lg mt-4"
-                    />
-                )}
             </div>
         </div>
     );

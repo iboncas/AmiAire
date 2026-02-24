@@ -1,5 +1,22 @@
 @import 'leaflet/dist/leaflet.css';
 
+.official-triangle-icon {
+    background: transparent;
+    border: none;
+}
+
+.official-triangle {
+    width: 18px;
+    height: 16px;
+    clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+    box-shadow: 0 0 1px rgba(0, 0, 0, 0.6);
+}
+
+.official-legend-triangle {
+    background: linear-gradient(90deg, #fc8d59 0 50%, #1a9850 50% 100%);
+    clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

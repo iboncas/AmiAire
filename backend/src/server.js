@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { connectToDatabase, closeDatabaseConnection } from './config/database.js';
 import sensorRoutes from './routes/sensors.js';
+import officialRoutes from './routes/official.js';
 
 dotenv.config();
 
@@ -20,6 +21,7 @@ app.get('/health', (req, res) => {
 
 // API routes
 app.use('/api', sensorRoutes);
+app.use('/api', officialRoutes);
 
 // 404 handler
 app.use((req, res) => {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Header from './components/Header';
 import MapContainer from './components/Map/MapContainer';
 import FilterControls from './components/Map/FilterControls';
@@ -6,8 +6,8 @@ import Legend from './components/Legend';
 import SensorDetails from './components/SensorDetails';
 
 import LoadingSpinner from './components/LoadingSpinner';
-import type { Sensor, FilterOptions } from './types/sensor';
-import { fetchSensores, geocode } from './services/api';
+import type { Sensor } from './types/sensor';
+import { fetchSensores, fetchEstacionesOficiales, geocode } from './services/api';
 import { haversineKm } from './utils/sensorUtils';
 
 function App() {
@@ -22,21 +22,26 @@ function App() {
     center: [number, number];
     radiusKm: number;
   } | null>(null);
+  const didMountRef = useRef(false);
 
   // New State for Filters
   const [showDIY, setShowDIY] = useState(true);
-  const [showOfficial, setShowOfficial] = useState(false);
+  const [showOfficial, setShowOfficial] = useState(true);
+  const [showPM10, setShowPM10] = useState(true);
+  const [showPM25, setShowPM25] = useState(true);
   const [activeSearch, setActiveSearch] = useState<{
     city: string;
     radius: number;
     startDate: string;
     endDate: string;
+    strictDates: boolean;
     center: { lat: number; lon: number } | null;
   }>({
     city: '',
     radius: 10,
     startDate: '',
     endDate: '',
+    strictDates: false,
     center: null,
   });
 
@@ -48,10 +53,21 @@ function App() {
   const loadSensors = async () => {
     setIsLoading(true);
     try {
-      const sensors = await fetchSensores();
-      setAllSensors(sensors);
-      // Initial filtering
-      const filtered = applyFilters(sensors, activeSearch, showDIY, showOfficial);
+      const [diySensorsResult, officialSensorsResult] = await Promise.all([
+        fetchSensores(),
+        fetchEstacionesOficiales(activeSearch.startDate, activeSearch.endDate),
+      ]);
+
+      const diySensors = Array.isArray(diySensorsResult) ? diySensorsResult : [];
+      const officialSensors = Array.isArray(officialSensorsResult) ? officialSensorsResult : [];
+
+      const all = [
+        ...diySensors.map(s => ({ ...s, type: 'diy' as const })),
+        ...officialSensors.map(s => ({ ...s, type: 'official' as const })),
+      ];
+
+      setAllSensors(all);
+      const filtered = applyFilters(all, activeSearch, showDIY, showOfficial, showPM10, showPM25);
       setFilteredSensors(filtered);
     } catch (error) {
       console.error('Error loading sensors:', error);
@@ -65,17 +81,30 @@ function App() {
     sensors: Sensor[],
     searchState: typeof activeSearch,
     diy: boolean,
-    official: boolean
+    official: boolean,
+    pm10: boolean,
+    pm25: boolean
   ) => {
     return sensors.filter((sensor) => {
-      let ok = true;
-
       // Sensor Type Filter
-      if (!diy) {
-        // Assuming all current sensors are DIY.
-        return false;
+      if (sensor.type === 'diy' && !diy) return false;
+      if (sensor.type === 'official') {
+        if (!official) return false;
+
+        // If official is enabled, filter by PM type if at least one PM filter is ON
+        // If both are OFF, we show nothing for official (or could show all, but usually user wants selection)
+        // Request says: "select PM10 and PM2.5". 
+        // Logic: Show if station has PM10 AND showPM10 is ON, OR station has PM25 AND showPM25 is ON.
+        const hasPmInfo =
+          typeof sensor.hasPM10 === 'boolean' || typeof sensor.hasPM25 === 'boolean';
+        if (hasPmInfo) {
+          const matchesPM10 = Boolean(sensor.hasPM10 && pm10);
+          const matchesPM25 = Boolean(sensor.hasPM25 && pm25);
+          if (!matchesPM10 && !matchesPM25) return false;
+        }
       }
-      // Future: if (sensor.type === 'official' && !official) return false;
+
+      let ok = true;
 
       // Location filter (only if a search has been performed)
       if (searchState.center && searchState.radius) {
@@ -90,11 +119,23 @@ function App() {
       }
 
       // Date filters
-      if (ok && searchState.startDate) {
-        ok = new Date(sensor.fechaInicio) >= new Date(searchState.startDate);
-      }
-      if (ok && searchState.endDate) {
-        ok = new Date(sensor.fechaRecogida) <= new Date(searchState.endDate);
+      const hasStart = Boolean(searchState.startDate);
+      const hasEnd = Boolean(searchState.endDate);
+      if (ok && (hasStart || hasEnd)) {
+        const sensorStart = sensor.fechaInicio ? new Date(sensor.fechaInicio) : null;
+        const sensorEnd = sensor.fechaRecogida ? new Date(sensor.fechaRecogida) : null;
+        const start = hasStart ? new Date(`${searchState.startDate}T00:00:00.000Z`) : null;
+        const end = hasEnd ? new Date(`${searchState.endDate}T23:59:59.999Z`) : null;
+        const validStart = sensorStart instanceof Date && !Number.isNaN(sensorStart.getTime());
+        const validEnd = sensorEnd instanceof Date && !Number.isNaN(sensorEnd.getTime());
+
+        if (searchState.strictDates) {
+          if (hasStart && validStart) ok = sensorStart! >= start!;
+          if (ok && hasEnd && validEnd) ok = sensorEnd! <= end!;
+        } else {
+          if (hasStart && validEnd) ok = sensorEnd! >= start!;
+          if (ok && hasEnd && validStart) ok = sensorStart! <= end!;
+        }
       }
 
       return ok;
@@ -103,43 +144,77 @@ function App() {
 
   // Run filtering when type selection changes
   useEffect(() => {
-    const filtered = applyFilters(allSensors, activeSearch, showDIY, showOfficial);
+    const filtered = applyFilters(allSensors, activeSearch, showDIY, showOfficial, showPM10, showPM25);
     setFilteredSensors(filtered);
-  }, [showDIY, showOfficial, allSensors, activeSearch]);
+  }, [showDIY, showOfficial, showPM10, showPM25, allSensors, activeSearch]);
+
+  const heatmapSensors = applyFilters(
+    allSensors,
+    activeSearch,
+    showDIY,
+    showOfficial,
+    showPM10,
+    showPM25
+  );
+
+  useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
+    loadSensors();
+  }, [activeSearch.startDate, activeSearch.endDate]);
 
   const handleSearch = async (
     city: string,
     radius: number,
     startDate: string,
-    endDate: string
+    endDate: string,
+    strictDates: boolean
   ) => {
-    if (!city || isNaN(radius)) {
-      alert('Introduce ciudad y radio válidos');
+    // Validation: Require either a city OR at least one date
+    if (!city && !startDate && !endDate) {
+      alert('Introduce una ciudad o un rango de fechas');
+      return;
+    }
+
+    // If city is provided, but radius is invalid
+    if (city && (isNaN(radius) || radius <= 0)) {
+      alert('Introduce un radio válido');
       return;
     }
 
     setIsLoading(true);
     try {
-      const centro = await geocode(city);
+      let centro = null;
+
+      if (city) {
+        centro = await geocode(city);
+
+        setMapCenter([centro.lat, centro.lon]);
+        setMapZoom(11);
+        setRadiusCircle({
+          center: [centro.lat, centro.lon],
+          radiusKm: radius,
+        });
+      } else {
+        // If no city, reset map view and clear radius circle
+        setMapCenter([40.4168, -3.7038]);
+        setMapZoom(5);
+        setRadiusCircle(null);
+      }
 
       const newSearchState = {
         city,
         radius,
         startDate,
         endDate,
+        strictDates,
         center: centro,
       };
 
       setActiveSearch(newSearchState);
-
       // Filtering will happen automatically via useEffect because activeSearch changed
-
-      setMapCenter([centro.lat, centro.lon]);
-      setMapZoom(11);
-      setRadiusCircle({
-        center: [centro.lat, centro.lon],
-        radiusKm: radius,
-      });
     } catch (error) {
       console.error('Geocoding error:', error);
       alert('Ciudad no encontrada');
@@ -153,6 +228,11 @@ function App() {
     if (type === 'official') setShowOfficial(value);
   };
 
+  const handlePMChange = (type: 'pm10' | 'pm25', value: boolean) => {
+    if (type === 'pm10') setShowPM10(value);
+    if (type === 'pm25') setShowPM25(value);
+  };
+
   const handleReset = () => {
     setFilteredSensors(allSensors);
     setMapCenter([40.4168, -3.7038]);
@@ -160,12 +240,15 @@ function App() {
     setRadiusCircle(null);
     setSelectedSensor(null);
     setShowDIY(true);
-    setShowOfficial(false);
+    setShowOfficial(true);
+    setShowPM10(true);
+    setShowPM25(true);
     setActiveSearch({
       city: '',
       radius: 10,
       startDate: '',
       endDate: '',
+      strictDates: false,
       center: null,
     });
   };
@@ -177,6 +260,7 @@ function App() {
   const handleSensorClick = (sensor: Sensor) => {
     setSelectedSensor(sensor);
   };
+
 
   return (
     <div className="min-h-screen bg-ami-gris">
@@ -200,11 +284,18 @@ function App() {
                   isLoading={isLoading}
                   showDIY={showDIY}
                   showOfficial={showOfficial}
+                  showPM10={showPM10}
+                  showPM25={showPM25}
                   onTypeChange={handleTypeChange}
+                  onPMChange={handlePMChange}
                 />
                 <MapContainer
+                  key={`${showHeatmap ? 'heat' : 'normal'}-${showDIY}-${showOfficial}-${showPM10}-${showPM25}`}
                   sensors={filteredSensors}
+                  heatmapSensors={heatmapSensors}
                   showHeatmap={showHeatmap}
+                  showPM10={showPM10}
+                  showPM25={showPM25}
                   center={mapCenter}
                   zoom={mapZoom}
                   radiusCircle={radiusCircle}

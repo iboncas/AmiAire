@@ -4,6 +4,9 @@ import { getDatabase } from '../config/database.js';
  * Maps MongoDB sensor document to frontend format
  */
 function mapSensorToFrontend(doc) {
+    const pm25 = doc['PM2.5'] || doc['PM25'] || doc['pm25'] || doc['pm2.5'];
+    const pm10 = doc['PM10'] || doc['pm10'];
+
     return {
         id: doc._id.toString(),
         nombre: `Sensor ${doc._id.toString().slice(-6)}`,
@@ -13,7 +16,9 @@ function mapSensorToFrontend(doc) {
         },
         nivelPolucion: doc['Nivel de polución PM2.5'] || doc['Nivel de polución PM10'] || 'Sin datos',
         metricas: {
-            concentracion: doc['PM2.5'] || doc['PM10'] || 0
+            concentracion: (typeof pm25 === 'number' ? pm25 : (typeof pm10 === 'number' ? pm10 : 0)),
+            pm25: typeof pm25 === 'number' ? pm25 : (pm25 !== undefined && pm25 !== null ? parseFloat(pm25) : null),
+            pm10: typeof pm10 === 'number' ? pm10 : (pm10 !== undefined && pm10 !== null ? parseFloat(pm10) : null)
         },
         fechaInicio: doc['Fecha de inicio'],
         fechaRecogida: doc['Fecha de recogida'],

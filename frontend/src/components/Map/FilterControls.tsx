@@ -8,7 +8,8 @@ interface FilterControlsProps {
         city: string,
         radius: number,
         startDate: string,
-        endDate: string
+        endDate: string,
+        strictDates: boolean
     ) => void;
     onReset: () => void;
     onToggleHeatmap: (showHeatmap: boolean) => void;
@@ -16,7 +17,10 @@ interface FilterControlsProps {
     isLoading: boolean;
     showDIY: boolean;
     showOfficial: boolean;
+    showPM10: boolean;
+    showPM25: boolean;
     onTypeChange: (type: 'diy' | 'official', value: boolean) => void;
+    onPMChange: (type: 'pm10' | 'pm25', value: boolean) => void;
 }
 
 export default function FilterControls({
@@ -27,16 +31,20 @@ export default function FilterControls({
     isLoading,
     showDIY,
     showOfficial,
+    showPM10,
+    showPM25,
     onTypeChange,
+    onPMChange,
 }: FilterControlsProps) {
     const [city, setCity] = useState('');
     const [radius, setRadius] = useState('10');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [strictDates, setStrictDates] = useState(false);
     const [showHeatmap, setShowHeatmap] = useState(false);
 
     const handleFilter = () => {
-        onFilter(city, parseFloat(radius), startDate, endDate);
+        onFilter(city, parseFloat(radius), startDate, endDate, strictDates);
     };
 
     const handleReset = () => {
@@ -44,6 +52,7 @@ export default function FilterControls({
         setRadius('10');
         setStartDate('');
         setEndDate('');
+        setStrictDates(false);
         setShowHeatmap(false);
         onReset();
     };
@@ -154,6 +163,15 @@ export default function FilterControls({
                         className="border border-gray-300 rounded px-3 py-1"
                     />
                 </div>
+                <label className="flex items-center gap-2 text-sm mt-6">
+                    <input
+                        type="checkbox"
+                        checked={strictDates}
+                        onChange={(e) => setStrictDates(e.target.checked)}
+                        className="w-4 h-4 text-ami-azul rounded focus:ring-ami-azul"
+                    />
+                    <span>Filtro estricto (solo dentro del rango)</span>
+                </label>
             </div>
 
             {/* Sensor Type Filter */}
@@ -176,6 +194,29 @@ export default function FilterControls({
                     />
                     <span>Estaciones Oficiales</span>
                 </label>
+
+                {showOfficial && (
+                    <>
+                        <label className="flex items-center gap-2 cursor-pointer ml-4">
+                            <input
+                                type="checkbox"
+                                checked={showPM10}
+                                onChange={(e) => onPMChange('pm10', e.target.checked)}
+                                className="w-4 h-4 text-ami-azul rounded focus:ring-ami-azul"
+                            />
+                            <span className="text-sm">PM10</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={showPM25}
+                                onChange={(e) => onPMChange('pm25', e.target.checked)}
+                                className="w-4 h-4 text-ami-azul rounded focus:ring-ami-azul"
+                            />
+                            <span className="text-sm">PM2.5</span>
+                        </label>
+                    </>
+                )}
             </div>
 
             {/* Action buttons */}
