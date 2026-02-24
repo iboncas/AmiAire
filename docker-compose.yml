@@ -50,6 +50,11 @@ services:
       - MONGODB_DATABASE=tfg
       - MONGODB_COLLECTION=records
       - PORT=3001
+      - MINIO_ENDPOINT=minio
+      - MINIO_PORT=9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - MINIO_BUCKET=images
     depends_on:
       - mongodb
     volumes:

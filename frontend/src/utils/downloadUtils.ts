@@ -67,7 +67,13 @@ export async function downloadImagesZip(
     const url = URL.createObjectURL(zipBlob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `sensores_${Date.now()}.zip`;
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const hh = String(now.getHours()).padStart(2, '0');
+    const min = String(now.getMinutes()).padStart(2, '0');
+    link.download = `imgs_${yyyy}${mm}${dd}${hh}${min}.zip`;
     link.click();
     URL.revokeObjectURL(url);
 }

@@ -309,6 +309,20 @@ function App() {
           <div className="md:col-span-4">
             <Legend />
             <SensorDetails sensor={selectedSensor} />
+            {selectedSensor?.type === 'diy' && (
+              <div className="bg-white rounded-lg shadow-md overflow-hidden mt-4">
+                <div className="bg-ami-azul-claro text-white px-4 py-3">
+                  <h5 className="text-lg font-semibold m-0">Imagen del Sensor</h5>
+                </div>
+                <div className="p-4">
+                  <img
+                    src={`/api/imagen?id=${encodeURIComponent(selectedSensor.id)}`}
+                    alt={`Sensor ${selectedSensor.id}`}
+                    className="max-w-full max-h-[300px] rounded-lg"
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
