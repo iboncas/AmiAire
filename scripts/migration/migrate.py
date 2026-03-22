@@ -7,39 +7,74 @@ from minio.error import S3Error
 from dotenv import load_dotenv
 import os
 from io import BytesIO
-from bson import ObjectId
+from bson import ObjectId, decode_all
+from bson.binary import Binary
 from tqdm import tqdm
 
 # Load env vars
 load_dotenv()
 
+
+def require_env(name: str) -> str:
+    value = os.getenv(name)
+    if not value:
+        raise RuntimeError(
+            f"Missing required environment variable: {name}. "
+            "Set it in your shell or .env file before running the migration."
+        )
+    return value
+
 # MongoDB
-mongo_client = MongoClient(os.getenv("MONGO_URI"))
+mongo_client = MongoClient(require_env("MONGO_URI"))
 db = mongo_client["tfg"]
 collection = db["records"]
 
 # MinIO
 minio_client = Minio(
-    os.getenv("MINIO_ENDPOINT"),
-    access_key=os.getenv("MINIO_ACCESS_KEY"),
-    secret_key=os.getenv("MINIO_SECRET_KEY"),
+    require_env("MINIO_ENDPOINT"),
+    access_key=require_env("MINIO_ACCESS_KEY"),
+    secret_key=require_env("MINIO_SECRET_KEY"),
     secure=False
 )
 
-bucket_name = os.getenv("MINIO_BUCKET")
+bucket_name = require_env("MINIO_BUCKET")
 
-# Load JSON data
-with open("../../AQ_database_filtered_june_2087.json", "r", encoding="utf-8") as f:
-    data = json.load(f)
+input_path = "../../new_data.bson"
+
+
+def load_data(path):
+    _, ext = os.path.splitext(path.lower())
+
+    if ext == ".json":
+        with open(path, "r", encoding="utf-8") as f:
+            loaded = json.load(f)
+            return loaded if isinstance(loaded, list) else [loaded]
+
+    if ext == ".bson":
+        with open(path, "rb") as f:
+            return decode_all(f.read())
+
+    raise ValueError(f"Unsupported file extension '{ext}'. Use .json or .bson.")
+
+
+def decode_image_value(value):
+    if isinstance(value, str):
+        return base64.b64decode(value)
+    if isinstance(value, (bytes, bytearray, Binary)):
+        return bytes(value)
+    raise ValueError("Unsupported image format in 'Imagen de entrada'")
+
+
+data = load_data(input_path)
 
 print(f"Starting migration of {len(data)} records...")
 
 # Wrap the data loop with tqdm
 for record in tqdm(data, desc="Migrating records", unit="record"):
     try:
-        # Extract and decode base64 image
-        image_base64 = record.pop("Imagen de entrada")
-        image_bytes = base64.b64decode(image_base64)
+        # Extract and decode image (base64 text in JSON, binary in BSON)
+        image_value = record.pop("Imagen de entrada")
+        image_bytes = decode_image_value(image_value)
 
         # Generate unique object name
         object_name = f"{uuid.uuid4()}.png"

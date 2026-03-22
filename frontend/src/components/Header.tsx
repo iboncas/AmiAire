@@ -1,13 +1,43 @@
 interface HeaderProps {
-    // Future: could add navigation props if needed
+    activeView: 'analysis' | 'map';
+    onNavigate: (view: 'analysis' | 'map') => void;
 }
 
-export default function Header({ }: HeaderProps) {
+export default function Header({ activeView, onNavigate }: HeaderProps) {
     return (
         <header className="bg-white shadow-sm px-4 py-2 sticky top-0 z-50">
-            <a href="/" className="flex items-center text-gray-900 no-underline">
-                <img src="/logo.png" alt="AmIAire" className="h-10 mr-2" />
-            </a>
+            <div className="max-w-7xl mx-auto flex items-center justify-between">
+                <button
+                    type="button"
+                    onClick={() => onNavigate('analysis')}
+                    className="flex items-center text-gray-900 no-underline bg-transparent border-0 p-0 cursor-pointer"
+                >
+                    <img src="/logo.png" alt="AmIAire" className="h-10 mr-2" />
+                </button>
+
+                <nav className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={() => onNavigate('analysis')}
+                        className={`px-3 py-2 rounded text-sm font-medium ${activeView === 'analysis'
+                            ? 'bg-ami-azul text-white'
+                            : 'text-ami-azul hover:bg-gray-100'
+                            }`}
+                    >
+                        Herramienta
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => onNavigate('map')}
+                        className={`px-3 py-2 rounded text-sm font-medium ${activeView === 'map'
+                            ? 'bg-ami-azul text-white'
+                            : 'text-ami-azul hover:bg-gray-100'
+                            }`}
+                    >
+                        Mapa
+                    </button>
+                </nav>
+            </div>
         </header>
     );
 }

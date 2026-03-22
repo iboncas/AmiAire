@@ -3,10 +3,7 @@ import type { Sensor } from '../types/sensor';
 const MAX_POLLUTION = 150;
 
 export function getCategoria(sensor: Sensor): string {
-    // 1) Handle official stations specifically if they have the 'Oficial' level
-    if (sensor.nivelPolucion === 'Oficial') return 'Oficial';
-
-    // 2) If numeric concentration exists, use thresholds
+    // 1) If numeric concentration exists, use thresholds
     if (sensor.metricas?.concentracion !== undefined && sensor.metricas.concentracion > 0) {
         const c = sensor.metricas.concentracion;
         if (c >= 150) return 'Extremo';
@@ -15,9 +12,9 @@ export function getCategoria(sensor: Sensor): string {
         if (c >= 10) return 'Bueno';
         return 'Bajo'; // < 10 µg/m³
     }
-    // 3) Otherwise use the string level
+    // 2) Otherwise use the string level
     if (sensor.nivelPolucion && sensor.nivelPolucion !== 'Sin datos') return sensor.nivelPolucion;
-    // 4) No data
+    // 3) No data
     return 'SinDatos';
 }
 
@@ -28,7 +25,6 @@ export function getColor(sensor: Sensor): string {
     if (cat.includes('moderado')) return '#fee08b'; // yellow
     if (cat.includes('bueno')) return '#91cf60'; // light green (better)
     if (cat.includes('bajo')) return '#1a9850'; // green (worse)
-    if (cat.includes('oficial')) return '#2196f3'; // blue for official
     return '#999'; // gray "no data"
 }
 

@@ -18,13 +18,6 @@ export default function Legend() {
                         <span className="w-[14px] h-[14px] inline-block rounded-full border border-gray-700 bg-gray-200"></span>
                         <span>Círculo: sensores DIY</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <span className="w-[14px] h-[14px] inline-block border border-gray-700 official-legend-triangle"></span>
-                        <span>Triángulo: estaciones oficiales</span>
-                    </div>
-                    <div className="mt-2 text-xs text-gray-600">
-                        Si PM10 y PM2.5 están seleccionados, el triángulo se divide en dos colores (izq: PM10, dcha: PM2.5).
-                    </div>
                 </div>
                 {levels.map((level) => (
                     <div key={level.name} className="flex items-center gap-2 mb-2 text-sm">

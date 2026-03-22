@@ -2,3 +2,4 @@ pymongo
 minio
 python-dotenv
 tqdm
+geopandas

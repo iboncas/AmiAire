@@ -14,9 +14,7 @@ export interface Sensor {
     fechaInicio: string;
     fechaRecogida: string;
     imagen?: string;
-    type?: 'diy' | 'official';
-    hasPM10?: boolean;
-    hasPM25?: boolean;
+    type?: 'diy';
 }
 
 export interface FilterOptions {
@@ -28,7 +26,6 @@ export interface FilterOptions {
     fechaInicio?: string;
     fechaFin?: string;
     showDIY?: boolean;
-    showOfficial?: boolean;
 }
 
 export interface SensoresResponse {

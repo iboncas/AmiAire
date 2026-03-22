@@ -3,8 +3,9 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { connectToDatabase, closeDatabaseConnection } from './config/database.js';
 import sensorRoutes from './routes/sensors.js';
-import officialRoutes from './routes/official.js';
 import imageRoutes from './routes/images.js';
+import experimentRoutes from './routes/experiments.js';
+import analysisRoutes from './routes/analysis.js';
 
 dotenv.config();
 
@@ -13,7 +14,8 @@ const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '25mb' }));
+app.use(express.urlencoded({ limit: '25mb', extended: true }));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -22,8 +24,9 @@ app.get('/health', (req, res) => {
 
 // API routes
 app.use('/api', sensorRoutes);
-app.use('/api', officialRoutes);
 app.use('/api', imageRoutes);
+app.use('/api', experimentRoutes);
+app.use('/api', analysisRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -36,6 +39,13 @@ app.use((req, res) => {
 // Error handler
 app.use((err, req, res, next) => {
     console.error('Server error:', err);
+    if (err?.type === 'entity.too.large') {
+        return res.status(413).json({
+            success: false,
+            error: 'Payload demasiado grande',
+            message: 'La imagen supera el tamaño máximo permitido por la API',
+        });
+    }
     res.status(500).json({
         success: false,
         error: 'Error interno del servidor',
