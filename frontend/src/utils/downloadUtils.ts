@@ -59,9 +59,17 @@ export async function downloadImagesZip(
 
     const zip = new JSZip();
     imageData.forEach(({ id, base64 }) => {
-        const blob = b64ToBlob(base64, 'image/jpeg');
-        zip.file(`${id}.jpg`, blob);
+        try {
+            const blob = b64ToBlob(base64, 'image/jpeg');
+            zip.file(`${id}.jpg`, blob);
+        } catch (error) {
+            console.error(`Imagen inválida para ${id}, se omite del ZIP`, error);
+        }
     });
+
+    if (!Object.keys(zip.files).length) {
+        throw new Error('No hay imágenes válidas para incluir en el ZIP');
+    }
 
     const zipBlob = await zip.generateAsync({ type: 'blob' });
     const url = URL.createObjectURL(zipBlob);
@@ -79,7 +87,8 @@ export async function downloadImagesZip(
 }
 
 function b64ToBlob(b64: string, mime: string): Blob {
-    const byteStr = atob(b64);
+    const normalized = b64.includes(',') ? b64.split(',').pop() || '' : b64;
+    const byteStr = atob(normalized);
     const len = byteStr.length;
     const bytes = new Uint8Array(len);
     for (let i = 0; i < len; i++) {

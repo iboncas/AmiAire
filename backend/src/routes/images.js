@@ -53,6 +53,85 @@ async function fetchImageBuffer(bucket, objectName) {
     return Buffer.concat(chunks);
 }
 
+async function handleFetchImages(ids, res) {
+    const validIds = ids.filter((id) => ObjectId.isValid(id));
+    const objectIds = validIds.map((id) => new ObjectId(id));
+
+    if (!objectIds.length) {
+        return res.json([]);
+    }
+
+    const db = getDatabase();
+    const collection = db.collection(process.env.MONGODB_COLLECTION || 'records');
+    const docs = await collection
+        .find({ _id: { $in: objectIds } }, { projection: { 'Imagen de entrada': 1 } })
+        .toArray();
+
+    const images = [];
+    for (const doc of docs) {
+        if (!doc['Imagen de entrada']) continue;
+        const info = parseMinioUrl(doc['Imagen de entrada']);
+        const bucket = info?.bucket || MINIO_BUCKET;
+        const objectName = info?.object || doc['Imagen de entrada'];
+        try {
+            const buffer = await fetchImageBuffer(bucket, objectName);
+            images.push({
+                id: doc._id.toString(),
+                base64: buffer.toString('base64'),
+            });
+        } catch (err) {
+            console.error(`Failed to fetch image ${objectName}:`, err);
+        }
+    }
+
+    return res.json(images);
+}
+
+async function handleEstimateImages(ids, res) {
+    const validIds = ids.filter((id) => ObjectId.isValid(id));
+    const objectIds = validIds.map((id) => new ObjectId(id));
+
+    if (!objectIds.length) {
+        return res.json({
+            requestedIds: ids.length,
+            validIds: 0,
+            foundImages: 0,
+            estimatedBytes: 0,
+        });
+    }
+
+    const db = getDatabase();
+    const collection = db.collection(process.env.MONGODB_COLLECTION || 'records');
+    const docs = await collection
+        .find({ _id: { $in: objectIds } }, { projection: { 'Imagen de entrada': 1 } })
+        .toArray();
+
+    let foundImages = 0;
+    let estimatedBytes = 0;
+
+    for (const doc of docs) {
+        if (!doc['Imagen de entrada']) continue;
+        const info = parseMinioUrl(doc['Imagen de entrada']);
+        const bucket = info?.bucket || MINIO_BUCKET;
+        const objectName = info?.object || doc['Imagen de entrada'];
+
+        try {
+            const stat = await minioClient.statObject(bucket, objectName);
+            foundImages += 1;
+            estimatedBytes += Number(stat?.size || 0);
+        } catch (err) {
+            console.error(`Failed to stat image ${objectName}:`, err);
+        }
+    }
+
+    return res.json({
+        requestedIds: ids.length,
+        validIds: validIds.length,
+        foundImages,
+        estimatedBytes,
+    });
+}
+
 router.get('/imagen', async (req, res) => {
     try {
         const id = typeof req.query.id === 'string' ? req.query.id : '';
@@ -100,37 +179,54 @@ router.get('/imagenes', async (req, res) => {
         }
 
         const ids = idsParam.split(',').map((id) => id.trim()).filter(Boolean);
-        const objectIds = ids.map((id) => new ObjectId(id));
-
-        const db = getDatabase();
-        const collection = db.collection(process.env.MONGODB_COLLECTION || 'records');
-        const docs = await collection
-            .find({ _id: { $in: objectIds } }, { projection: { 'Imagen de entrada': 1 } })
-            .toArray();
-
-        const images = [];
-        for (const doc of docs) {
-            if (!doc['Imagen de entrada']) continue;
-            const info = parseMinioUrl(doc['Imagen de entrada']);
-            const bucket = info?.bucket || MINIO_BUCKET;
-            const objectName = info?.object || doc['Imagen de entrada'];
-            try {
-                const buffer = await fetchImageBuffer(bucket, objectName);
-                images.push({
-                    id: doc._id.toString(),
-                    base64: buffer.toString('base64'),
-                });
-            } catch (err) {
-                console.error(`Failed to fetch image ${objectName}:`, err);
-            }
-        }
-
-        res.json(images);
+        return handleFetchImages(ids, res);
     } catch (error) {
         console.error('Error in GET /api/imagenes:', error);
         res.status(500).json({
             success: false,
             error: 'Error al obtener imágenes',
+            message: error.message,
+        });
+    }
+});
+
+router.post('/imagenes', async (req, res) => {
+    try {
+        const rawIds = Array.isArray(req.body?.ids) ? req.body.ids : [];
+        const ids = rawIds
+            .map((id) => (typeof id === 'string' ? id.trim() : ''))
+            .filter(Boolean);
+        if (!ids.length) {
+            return res.status(400).json({ success: false, error: 'Missing ids' });
+        }
+
+        return handleFetchImages(ids, res);
+    } catch (error) {
+        console.error('Error in POST /api/imagenes:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Error al obtener imágenes',
+            message: error.message,
+        });
+    }
+});
+
+router.post('/imagenes/estimacion', async (req, res) => {
+    try {
+        const rawIds = Array.isArray(req.body?.ids) ? req.body.ids : [];
+        const ids = rawIds
+            .map((id) => (typeof id === 'string' ? id.trim() : ''))
+            .filter(Boolean);
+        if (!ids.length) {
+            return res.status(400).json({ success: false, error: 'Missing ids' });
+        }
+
+        return handleEstimateImages(ids, res);
+    } catch (error) {
+        console.error('Error in POST /api/imagenes/estimacion:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Error al estimar imágenes',
             message: error.message,
         });
     }

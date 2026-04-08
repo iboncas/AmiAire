@@ -9,6 +9,10 @@ from werkzeug.exceptions import RequestEntityTooLarge
 
 from pipeline import process_roi
 from roi_extraction import extract_roi_from_image_array
+from sensor_classifier import (
+    SensorImageValidationError,
+    classify_sensor_image,
+)
 
 
 app = Flask(__name__)
@@ -63,6 +67,26 @@ def health():
     return jsonify({'status': 'ok', 'service': 'analysis-service'})
 
 
+@app.post('/validate-sensor-image')
+def validate_sensor_image_endpoint():
+    payload = request.get_json(silent=True) or {}
+    image_b64 = payload.get('image_b64')
+
+    image_bgr = decode_base64_image(image_b64)
+    if image_bgr is None:
+        return jsonify({'success': False, 'error': 'Invalid image payload'}), 400
+
+    try:
+        validation = classify_sensor_image(image_bgr)
+    except SensorImageValidationError as err:
+        return jsonify({'success': False, 'error': str(err)}), 500
+
+    return jsonify({
+        'success': True,
+        'data': validation,
+    })
+
+
 @app.post('/process-image')
 def process_image_endpoint():
     payload = request.get_json(silent=True) or {}
@@ -72,6 +96,18 @@ def process_image_endpoint():
     image_bgr = decode_base64_image(image_b64)
     if image_bgr is None:
         return jsonify({'success': False, 'error': 'Invalid image payload'}), 400
+
+    try:
+        validation = classify_sensor_image(image_bgr)
+    except SensorImageValidationError as err:
+        return jsonify({'success': False, 'error': str(err)}), 500
+
+    if not validation['is_sensor']:
+        return jsonify({
+            'success': False,
+            'error': 'La imagen subida no parece corresponder a un sensor',
+            'validation': validation,
+        }), 422
 
     image_with_contour, roi = extract_roi_from_image_array(image_bgr)
     if roi is None:
@@ -91,6 +127,7 @@ def process_image_endpoint():
         'pollution_level': pipeline_results['classification'],
         'binary_b64': pipeline_results['binary_mask_b64'],
         'overlay_b64': pipeline_results['overlay_b64'],
+        'validation': validation,
     })
 
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import MapContainer from '../Map/MapContainer';
 import FilterControls from '../Map/FilterControls';
 import Legend from '../Legend';
@@ -20,11 +20,8 @@ export default function MapPage() {
         center: [number, number];
         radiusKm: number;
     } | null>(null);
-    const didMountRef = useRef(false);
     const [showDIY, setShowDIY] = useState(true);
     const [showOfficial, setShowOfficial] = useState(true);
-    const [showPM10, setShowPM10] = useState(true);
-    const [showPM25, setShowPM25] = useState(true);
     const [activeSearch, setActiveSearch] = useState<{
         city: string;
         radius: number;
@@ -45,15 +42,25 @@ export default function MapPage() {
         loadSensors();
     }, []);
 
+    const hasDateFilter =
+        Boolean(activeSearch.startDate) ||
+        Boolean(activeSearch.endDate);
+
+    const refreshOfficialSensors = async (startDate?: string, endDate?: string) => {
+        const official = await fetchEstacionesOficiales(startDate, endDate);
+        const normalizedOfficial = official.map((s) => ({ ...s, type: 'official' as const }));
+        setAllSensors((prev) => {
+            const diy = prev.filter((sensor) => sensor.type !== 'official');
+            return [...diy, ...normalizedOfficial];
+        });
+    };
+
     const loadSensors = async () => {
         setIsLoading(true);
         try {
             const [diySensorsResult, officialSensorsResult] = await Promise.allSettled([
                 fetchSensores(),
-                fetchEstacionesOficiales(
-                    activeSearch.startDate || undefined,
-                    activeSearch.endDate || undefined
-                ),
+                fetchEstacionesOficiales(),
             ]);
             const diySensors =
                 diySensorsResult.status === 'fulfilled' && Array.isArray(diySensorsResult.value)
@@ -71,7 +78,7 @@ export default function MapPage() {
             ];
 
             setAllSensors(all);
-            const filtered = applyFilters(all, activeSearch, showDIY, showOfficial, showPM10, showPM25);
+            const filtered = applyFilters(all, activeSearch, showDIY, showOfficial);
             setFilteredSensors(filtered);
         } catch (error) {
             console.error('Error loading sensors:', error);
@@ -85,23 +92,11 @@ export default function MapPage() {
         sensors: Sensor[],
         searchState: typeof activeSearch,
         diy: boolean,
-        official: boolean,
-        pm10: boolean,
-        pm25: boolean
+        official: boolean
     ) => {
         return sensors.filter((sensor) => {
             if (sensor.type === 'diy' && !diy) return false;
-            if (sensor.type === 'official') {
-                if (!official) return false;
-
-                const hasPM10Info = sensor.hasPM10 === true;
-                const hasPM25Info = sensor.hasPM25 === true;
-                if (hasPM10Info || hasPM25Info) {
-                    const matchesPM10 = Boolean(sensor.hasPM10 && pm10);
-                    const matchesPM25 = Boolean(sensor.hasPM25 && pm25);
-                    if (!matchesPM10 && !matchesPM25) return false;
-                }
-            }
+            if (sensor.type === 'official' && !official) return false;
 
             let ok = true;
 
@@ -140,26 +135,23 @@ export default function MapPage() {
     };
 
     useEffect(() => {
-        const filtered = applyFilters(allSensors, activeSearch, showDIY, showOfficial, showPM10, showPM25);
+        const filtered = applyFilters(allSensors, activeSearch, showDIY, showOfficial);
         setFilteredSensors(filtered);
-    }, [showDIY, showOfficial, showPM10, showPM25, allSensors, activeSearch]);
+    }, [showDIY, showOfficial, allSensors, activeSearch]);
 
-    const heatmapSensors = applyFilters(
-        allSensors,
-        activeSearch,
-        showDIY,
-        showOfficial,
-        showPM10,
-        showPM25
-    );
-
-    useEffect(() => {
-        if (!didMountRef.current) {
-            didMountRef.current = true;
-            return;
-        }
-        loadSensors();
-    }, [activeSearch.startDate, activeSearch.endDate]);
+    const heatmapSensors = hasDateFilter
+        ? filteredSensors
+        : applyFilters(
+            allSensors,
+            {
+                ...activeSearch,
+                startDate: '',
+                endDate: '',
+                strictDates: false,
+            },
+            false,
+            showOfficial
+        );
 
     const handleSearch = async (
         city: string,
@@ -181,6 +173,7 @@ export default function MapPage() {
         setIsLoading(true);
         try {
             let centro = null;
+            const hasDateFilter = Boolean(startDate || endDate);
 
             if (city) {
                 centro = await geocode(city);
@@ -195,6 +188,12 @@ export default function MapPage() {
                 setMapCenter([40.4168, -3.7038]);
                 setMapZoom(5);
                 setRadiusCircle(null);
+            }
+
+            if (hasDateFilter) {
+                await refreshOfficialSensors(startDate || undefined, endDate || undefined);
+            } else {
+                await refreshOfficialSensors();
             }
 
             const newSearchState = {
@@ -220,21 +219,14 @@ export default function MapPage() {
         if (type === 'official') setShowOfficial(value);
     };
 
-    const handlePMChange = (type: 'pm10' | 'pm25', value: boolean) => {
-        if (type === 'pm10') setShowPM10(value);
-        if (type === 'pm25') setShowPM25(value);
-    };
-
     const handleReset = () => {
-        setFilteredSensors(allSensors);
+        void refreshOfficialSensors();
         setMapCenter([40.4168, -3.7038]);
         setMapZoom(5);
         setRadiusCircle(null);
         setSelectedSensor(null);
         setShowDIY(true);
         setShowOfficial(true);
-        setShowPM10(true);
-        setShowPM25(true);
         setActiveSearch({
             city: '',
             radius: 10,
@@ -260,7 +252,7 @@ export default function MapPage() {
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                 <div className="md:col-span-8">
                     <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4">
-                        <div className="bg-ami-azul-claro text-white px-4 py-3">
+                        <div className="bg-ami-azul text-white px-4 py-3">
                             <h5 className="text-lg font-semibold m-0">Mapa de Sensores</h5>
                         </div>
                         <div className="p-4">
@@ -272,18 +264,14 @@ export default function MapPage() {
                                 isLoading={isLoading}
                                 showDIY={showDIY}
                                 showOfficial={showOfficial}
-                                showPM10={showPM10}
-                                showPM25={showPM25}
                                 onTypeChange={handleTypeChange}
-                                onPMChange={handlePMChange}
+                                heatmapMode={hasDateFilter ? 'filtered' : 'realtime'}
                             />
                             <MapContainer
-                                key={`${showHeatmap ? 'heat' : 'normal'}-${showDIY}-${showOfficial}-${showPM10}-${showPM25}`}
+                                key={`${showHeatmap ? 'heat' : 'normal'}-${showDIY}-${showOfficial}`}
                                 sensors={filteredSensors}
                                 heatmapSensors={heatmapSensors}
                                 showHeatmap={showHeatmap}
-                                showPM10={showPM10}
-                                showPM25={showPM25}
                                 center={mapCenter}
                                 zoom={mapZoom}
                                 radiusCircle={radiusCircle}

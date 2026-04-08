@@ -1,6 +1,5 @@
 import type { Sensor } from '../types/sensor';
-import { getCategoria } from '../utils/sensorUtils';
-import { formatDate } from '../utils/dateUtils';
+import { formatDate, formatDateTime } from '../utils/dateUtils';
 
 interface SensorDetailsProps {
     sensor: Sensor | null;
@@ -22,6 +21,13 @@ export default function SensorDetails({ sensor }: SensorDetailsProps) {
         );
     }
 
+    const isOfficialAverage =
+        sensor.type === 'official' &&
+        typeof sensor.fechaInicio === 'string' &&
+        sensor.fechaInicio.trim() !== '';
+    const pm25Label = isOfficialAverage ? 'Concentración media PM2.5' : 'Concentración PM2.5';
+    const pm10Label = isOfficialAverage ? 'Concentración media PM10' : 'Concentración PM10';
+
     return (
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
             <div className="bg-ami-azul text-white px-4 py-3">
@@ -29,23 +35,20 @@ export default function SensorDetails({ sensor }: SensorDetailsProps) {
             </div>
             <div className="p-4">
                 <p>
-                    <strong>ID:</strong> {sensor.id}
-                </p>
-                <p>
                     <strong>Nombre:</strong> {sensor.nombre}
                 </p>
                 <p>
                     <strong>Categoría:</strong>{' '}
-                    {sensor.type === 'diy' ? 'DIY' : getCategoria(sensor)}
+                    {sensor.type === 'official' ? 'Oficial' : 'DIY'}
                 </p>
                 <p>
-                    <strong>Concentración PM2.5:</strong>{' '}
+                    <strong>{pm25Label}:</strong>{' '}
                     {typeof sensor.metricas?.pm25 === 'number'
                         ? `${sensor.metricas.pm25.toFixed(1)} μg/m³`
                         : 'N/A'}
                 </p>
                 <p>
-                    <strong>Concentración PM10:</strong>{' '}
+                    <strong>{pm10Label}:</strong>{' '}
                     {typeof sensor.metricas?.pm10 === 'number'
                         ? `${sensor.metricas.pm10.toFixed(1)} μg/m³`
                         : 'N/A'}
@@ -54,11 +57,16 @@ export default function SensorDetails({ sensor }: SensorDetailsProps) {
                     <strong>Ubicación:</strong> {sensor.ubicacion.latitud.toFixed(4)},{' '}
                     {sensor.ubicacion.longitud.toFixed(4)}
                 </p>
+                {(sensor.type !== 'official' || isOfficialAverage) && (
+                    <p>
+                        <strong>Fecha Inicio:</strong> {formatDate(sensor.fechaInicio)}
+                    </p>
+                )}
                 <p>
-                    <strong>Fecha Inicio:</strong> {formatDate(sensor.fechaInicio)}
-                </p>
-                <p>
-                    <strong>Fecha Recogida:</strong> {formatDate(sensor.fechaRecogida)}
+                    <strong>Fecha Recogida:</strong>{' '}
+                    {sensor.type === 'official' && !isOfficialAverage
+                        ? formatDateTime(sensor.fechaRecogida)
+                        : formatDate(sensor.fechaRecogida)}
                 </p>
             </div>
         </div>

@@ -8,8 +8,6 @@ interface MapContainerProps {
     sensors: Sensor[];
     heatmapSensors?: Sensor[];
     showHeatmap: boolean;
-    showPM10?: boolean;
-    showPM25?: boolean;
     center?: [number, number];
     zoom?: number;
     radiusCircle?: {
@@ -23,8 +21,6 @@ export default function MapContainer({
     sensors,
     heatmapSensors,
     showHeatmap,
-    showPM10 = true,
-    showPM25 = true,
     center = [40.4168, -3.7038],
     zoom = 5,
     radiusCircle,
@@ -79,45 +75,38 @@ export default function MapContainer({
             ) return;
 
             const isOfficial = sensor.type === 'official';
-            const pm25Value =
-                typeof sensor.metricas?.pm25 === 'number' && Number.isFinite(sensor.metricas.pm25)
-                    ? sensor.metricas.pm25
-                    : null;
-            const pm10Value =
-                typeof sensor.metricas?.pm10 === 'number' && Number.isFinite(sensor.metricas.pm10)
-                    ? sensor.metricas.pm10
-                    : null;
-
-            const pm25Color = getColorByConcentration(pm25Value);
-            const pm10Color = getColorByConcentration(pm10Value);
-            const pm25Valid = pm25Color !== '#999';
-            const pm10Valid = pm10Color !== '#999';
-
-            let triangleBackground = '#999';
-            if (showPM10 && showPM25) {
-                if (pm10Valid && pm25Valid) {
-                    triangleBackground = `linear-gradient(90deg, ${pm10Color} 0 50%, ${pm25Color} 50% 100%)`;
-                } else if (pm10Valid) {
-                    triangleBackground = pm10Color;
-                } else if (pm25Valid) {
-                    triangleBackground = pm25Color;
-                }
-            } else if (showPM25 && pm25Valid) {
-                triangleBackground = pm25Color;
-            } else if (showPM10 && pm10Valid) {
-                triangleBackground = pm10Color;
-            }
-
             const marker = isOfficial
-                ? L.marker([latitud, longitud], {
-                    icon: L.divIcon({
-                        className: 'official-triangle-icon',
-                        html: `<div class="official-triangle" style="background:${triangleBackground};"></div>`,
-                        iconSize: [18, 16],
-                        iconAnchor: [9, 14],
-                        popupAnchor: [0, -12],
-                    }),
-                })
+                ? (() => {
+                    const pm10 =
+                        typeof sensor.metricas?.pm10 === 'number' ? sensor.metricas.pm10 : null;
+                    const pm25 =
+                        typeof sensor.metricas?.pm25 === 'number' ? sensor.metricas.pm25 : null;
+                    const pm10Color = getColorByConcentration(pm10);
+                    const pm25Color = getColorByConcentration(pm25);
+                    const gradientId = `official-grad-${sensor.id.replace(/[^a-zA-Z0-9_-]/g, '')}`;
+
+                    return L.marker([latitud, longitud], {
+                        icon: L.divIcon({
+                            className: '',
+                            html: `
+                                <div style="width:20px;height:18px;display:block;">
+                                    <svg width="20" height="18" viewBox="0 0 20 18" xmlns="http://www.w3.org/2000/svg">
+                                        <defs>
+                                            <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                <stop offset="50%" stop-color="${pm10Color}"/>
+                                                <stop offset="50%" stop-color="${pm25Color}"/>
+                                            </linearGradient>
+                                        </defs>
+                                        <path d="M10 1 L19 17 L1 17 Z" fill="url(#${gradientId})" stroke="#1f2937" stroke-width="1.5"/>
+                                    </svg>
+                                </div>
+                            `,
+                            iconSize: [20, 18],
+                            iconAnchor: [10, 17],
+                            popupAnchor: [0, -12],
+                        }),
+                    });
+                })()
                 : L.circleMarker([latitud, longitud], {
                     radius: 8,
                     fillColor: getColor(sensor),
@@ -127,11 +116,38 @@ export default function MapContainer({
                     fillOpacity: 0.75,
                 });
 
-            marker.bindPopup(
-                `<strong>ID:</strong> ${sensor.id}<br>` +
-                `<strong>Categoría:</strong> ${getCategoria(sensor)}<br>` +
-                `<strong>Conc.:</strong> ${sensor.metricas?.concentracion?.toFixed(1) ?? '–'} μg/m³`
-            );
+            if (isOfficial) {
+                const isOfficialAverage =
+                    typeof sensor.fechaInicio === 'string' && sensor.fechaInicio.trim() !== '';
+                const pm25 =
+                    typeof sensor.metricas?.pm25 === 'number'
+                        ? `${sensor.metricas.pm25.toFixed(1)} μg/m³`
+                        : 'N/A';
+                const pm10 =
+                    typeof sensor.metricas?.pm10 === 'number'
+                        ? `${sensor.metricas.pm10.toFixed(1)} μg/m³`
+                        : 'N/A';
+                const pm25Label = isOfficialAverage ? 'Media PM2.5' : 'PM2.5';
+                const pm10Label = isOfficialAverage ? 'Media PM10' : 'PM10';
+                const dateRangeHtml = isOfficialAverage
+                    ? `<strong>Fecha Inicio:</strong> ${sensor.fechaInicio}<br>` +
+                    `<strong>Fecha Recogida:</strong> ${sensor.fechaRecogida}<br>`
+                    : '';
+
+                marker.bindPopup(
+                    `<strong>Estación oficial:</strong> ${sensor.nombre}<br>` +
+                    `<strong>ID:</strong> ${sensor.id}<br>` +
+                    dateRangeHtml +
+                    `<strong>${pm25Label}:</strong> ${pm25}<br>` +
+                    `<strong>${pm10Label}:</strong> ${pm10}`
+                );
+            } else {
+                marker.bindPopup(
+                    `<strong>ID:</strong> ${sensor.id}<br>` +
+                    `<strong>Categoría:</strong> ${getCategoria(sensor)}<br>` +
+                    `<strong>Conc.:</strong> ${sensor.metricas?.concentracion?.toFixed(1) ?? '–'} μg/m³`
+                );
+            }
 
             if (onSensorClick) {
                 marker.on('click', () => onSensorClick(sensor));

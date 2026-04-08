@@ -11,4 +11,4 @@ gdf["longitude"] = gdf.geometry.x
 gdf["latitude"] = gdf.geometry.y
 
 # Save to CSV
-gdf[["name", "longitude", "latitude"]].to_csv("stations_coordinates.csv", index=False)
+gdf[["gml_id", "name", "latitude", "longitude"]].to_csv("stations_coordinates.csv", index=False)

@@ -39,7 +39,7 @@ minio_client = Minio(
 
 bucket_name = require_env("MINIO_BUCKET")
 
-input_path = "../../new_data.bson"
+input_path = "../../AQ_database_filtered_june_2087.json"
 
 
 def load_data(path):

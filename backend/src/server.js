@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { connectToDatabase, closeDatabaseConnection } from './config/database.js';
 import sensorRoutes from './routes/sensors.js';
+import officialStationsRoutes from './routes/officialStations.js';
 import imageRoutes from './routes/images.js';
 import experimentRoutes from './routes/experiments.js';
 import analysisRoutes from './routes/analysis.js';
@@ -24,6 +25,7 @@ app.get('/health', (req, res) => {
 
 // API routes
 app.use('/api', sensorRoutes);
+app.use('/api', officialStationsRoutes);
 app.use('/api', imageRoutes);
 app.use('/api', experimentRoutes);
 app.use('/api', analysisRoutes);

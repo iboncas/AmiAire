@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import L from 'leaflet';
-import { geocode, processAnalysisImage, submitExperiment, type ProcessedAnalysis } from '../../services/api';
+import {
+    geocode,
+    processAnalysisImage,
+    submitExperiment,
+    validateSensorImage,
+    type ProcessedAnalysis,
+} from '../../services/api';
 
 interface ParticleAnalysisPageProps {
     onOpenMap: () => void;
@@ -22,6 +28,8 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
     const [successMessage, setSuccessMessage] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isValidatingImage, setIsValidatingImage] = useState(false);
+    const [showInvalidSensorModal, setShowInvalidSensorModal] = useState(false);
 
     const mapContainerRef = useRef<HTMLDivElement | null>(null);
     const mapRef = useRef<L.Map | null>(null);
@@ -99,21 +107,53 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
         setStep(3);
     };
 
+    const resetImageSelection = () => {
+        setImagePreview('');
+        setImageBase64('');
+        setProcessed(null);
+    };
+
     const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
         if (file.size > 10 * 1024 * 1024) {
             setErrorMessage('La imagen es demasiado pesada, por favor usa una menor a 10 MB.');
+            event.target.value = '';
             return;
         }
 
         const reader = new FileReader();
-        reader.onload = () => {
+        reader.onload = async () => {
             const result = typeof reader.result === 'string' ? reader.result : '';
-            setImagePreview(result);
-            setImageBase64(result.includes(',') ? result.split(',')[1] : result);
-            setProcessed(null);
             setErrorMessage('');
+            setSuccessMessage('');
+            setIsValidatingImage(true);
+
+            const nextImageBase64 = result.includes(',') ? result.split(',')[1] : result;
+
+            try {
+                const validation = await validateSensorImage(nextImageBase64);
+                if (!validation.is_sensor) {
+                    resetImageSelection();
+                    event.target.value = '';
+                    setShowInvalidSensorModal(true);
+                    return;
+                }
+
+                setImagePreview(result);
+                setImageBase64(nextImageBase64);
+                setProcessed(null);
+            } catch (error) {
+                resetImageSelection();
+                event.target.value = '';
+                if (error instanceof Error && error.message) {
+                    setErrorMessage(error.message);
+                } else {
+                    setErrorMessage('No se pudo validar la imagen del sensor.');
+                }
+            } finally {
+                setIsValidatingImage(false);
+            }
         };
         reader.readAsDataURL(file);
     };
@@ -181,6 +221,26 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
 
     return (
         <div className="container mx-auto px-4 py-6">
+            {showInvalidSensorModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4">
+                    <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+                        <h2 className="text-xl font-bold text-ami-azul">Imagen no valida</h2>
+                        <p className="mt-3 text-sm leading-6 text-gray-700">
+                            La imagen subida no parece corresponder a un sensor. Por favor, selecciona una foto real del sensor para continuar.
+                        </p>
+                        <div className="mt-5 flex justify-end">
+                            <button
+                                type="button"
+                                onClick={() => setShowInvalidSensorModal(false)}
+                                className="rounded-lg bg-ami-azul px-4 py-2 text-white"
+                            >
+                                Entendido
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-sm p-6">
                 <h1 className="text-2xl font-bold text-ami-azul mb-4">
                     Herramienta de análisis de calidad del aire
@@ -260,7 +320,12 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
                 {step === 3 && (
                     <div className="space-y-4">
                         <h2 className="font-semibold text-lg">Paso 3. Carga la imagen del sensor</h2>
-                        <input type="file" accept="image/*" onChange={handleImageChange} />
+                            <input type="file" accept="image/*" onChange={handleImageChange} />
+                            {isValidatingImage && (
+                                <p className="text-sm text-gray-600">
+                                    Validando que la imagen corresponda a un sensor...
+                                </p>
+                            )}
                         {imagePreview && (
                             <img
                                 src={imagePreview}
@@ -271,7 +336,7 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
                         <button
                             type="button"
                             onClick={handleAnalyzeImage}
-                            disabled={isProcessing}
+                            disabled={isProcessing || isValidatingImage}
                             className="px-4 py-2 rounded bg-ami-azul text-white disabled:opacity-50"
                         >
                             {isProcessing ? 'Analizando...' : 'Analizar imagen'}

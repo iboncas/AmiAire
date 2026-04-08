@@ -39,6 +39,20 @@ services:
     volumes:
       - minio_data:/data
 
+  analysis-service:
+    build: ./analysis-service
+    container_name: tfg-analysis-service
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - SENSOR_CLASSIFIER_MODEL_PATH=/app/models/sensor_classifier.h5
+    volumes:
+      - ./analysis-service:/app
+    depends_on:
+      - minio
+
   backend:
     build: ./backend
     container_name: tfg-backend
@@ -55,8 +69,10 @@ services:
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin
       - MINIO_BUCKET=images
+      - ANALYSIS_SERVICE_URL=http://analysis-service:8000
     depends_on:
       - mongodb
+      - analysis-service
     volumes:
       - ./backend:/app
       - /app/node_modules

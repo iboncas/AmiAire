@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Sensor } from '../../types/sensor';
 import { downloadCSV, downloadImagesZip } from '../../utils/downloadUtils';
-import { fetchImages } from '../../services/api';
+import { estimateImagesDownload, fetchImages, type ImagesEstimate } from '../../services/api';
 
 interface FilterControlsProps {
     onFilter: (
@@ -17,10 +17,8 @@ interface FilterControlsProps {
     isLoading: boolean;
     showDIY: boolean;
     showOfficial: boolean;
-    showPM10: boolean;
-    showPM25: boolean;
     onTypeChange: (type: 'diy' | 'official', value: boolean) => void;
-    onPMChange: (type: 'pm10' | 'pm25', value: boolean) => void;
+    heatmapMode: 'realtime' | 'filtered';
 }
 
 export default function FilterControls({
@@ -31,10 +29,8 @@ export default function FilterControls({
     isLoading,
     showDIY,
     showOfficial,
-    showPM10,
-    showPM25,
     onTypeChange,
-    onPMChange,
+    heatmapMode,
 }: FilterControlsProps) {
     const [city, setCity] = useState('');
     const [radius, setRadius] = useState('10');
@@ -42,6 +38,12 @@ export default function FilterControls({
     const [endDate, setEndDate] = useState('');
     const [strictDates, setStrictDates] = useState(false);
     const [showHeatmap, setShowHeatmap] = useState(false);
+    const [isPreparingDownload, setIsPreparingDownload] = useState(false);
+    const [isDownloadingZip, setIsDownloadingZip] = useState(false);
+    const [downloadConfirmData, setDownloadConfirmData] = useState<{
+        sensors: Sensor[];
+        estimate: ImagesEstimate;
+    } | null>(null);
 
     const handleFilter = () => {
         onFilter(city, parseFloat(radius), startDate, endDate, strictDates);
@@ -66,21 +68,73 @@ export default function FilterControls({
         downloadCSV(filteredSensors);
     };
 
-    const handleDownloadZip = async () => {
-        if (!filteredSensors.length) return;
+    const formatBytes = (bytes: number): string => {
+        if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+        const units = ['B', 'KB', 'MB', 'GB'];
+        let value = bytes;
+        let unitIndex = 0;
+        while (value >= 1024 && unitIndex < units.length - 1) {
+            value /= 1024;
+            unitIndex += 1;
+        }
+        const precision = unitIndex === 0 ? 0 : unitIndex === 1 ? 0 : 1;
+        return `${value.toFixed(precision)} ${units[unitIndex]}`;
+    };
+
+    const handleDownloadZip = async (): Promise<void> => {
+        if (!filteredSensors.length || isPreparingDownload || isDownloadingZip) return;
 
         try {
-            const ids = filteredSensors.map((s) => s.id);
-            const imageData = await fetchImages(ids);
-            await downloadImagesZip(filteredSensors, imageData);
+            setIsPreparingDownload(true);
+            const sensorsWithImage = filteredSensors.filter((s) => s.type !== 'official');
+            if (!sensorsWithImage.length) {
+                alert('No hay imágenes disponibles para los sensores seleccionados.');
+                return;
+            }
+
+            const ids = sensorsWithImage.map((s) => s.id);
+            const estimate = await estimateImagesDownload(ids);
+            if (!estimate.foundImages) {
+                alert('No se encontraron imágenes para los sensores seleccionados.');
+                return;
+            }
+
+            setDownloadConfirmData({
+                sensors: sensorsWithImage,
+                estimate,
+            });
         } catch (error) {
             console.error('ZIP error', error);
             alert('Problema al generar el ZIP (ver consola)');
+        } finally {
+            setIsPreparingDownload(false);
+        }
+    };
+
+    const handleConfirmDownload = async (): Promise<void> => {
+        if (!downloadConfirmData) return;
+
+        try {
+            setIsDownloadingZip(true);
+            const ids = downloadConfirmData.sensors.map((s) => s.id);
+            const imageData = await fetchImages(ids);
+            if (!imageData.length) {
+                alert('No se encontraron imágenes para los sensores seleccionados.');
+                setDownloadConfirmData(null);
+                return;
+            }
+
+            await downloadImagesZip(downloadConfirmData.sensors, imageData);
+            setDownloadConfirmData(null);
+        } catch (error) {
+            console.error('ZIP error', error);
+            alert('Problema al generar el ZIP (ver consola)');
+        } finally {
+            setIsDownloadingZip(false);
         }
     };
 
     const hasResults = filteredSensors.length > 0;
-
     return (
         <div>
             {/* Map type buttons */}
@@ -104,6 +158,11 @@ export default function FilterControls({
                     Ver Mapa de Calor
                 </button>
             </div>
+            <p className="mb-3 text-right text-xs text-gray-600">
+                {heatmapMode === 'realtime'
+                    ? 'Mapa de calor por defecto: mediciones oficiales en tiempo real.'
+                    : 'Mapa de calor filtrado: usa los sensores del area y periodo aplicados.'}
+            </p>
 
             {/* Location filter */}
             <p className="text-gray-600 text-sm mb-1">
@@ -194,29 +253,6 @@ export default function FilterControls({
                     />
                     <span>Estaciones Oficiales</span>
                 </label>
-
-                {showOfficial && (
-                    <>
-                        <label className="flex items-center gap-2 cursor-pointer ml-4">
-                            <input
-                                type="checkbox"
-                                checked={showPM10}
-                                onChange={(e) => onPMChange('pm10', e.target.checked)}
-                                className="w-4 h-4 text-ami-azul rounded focus:ring-ami-azul"
-                            />
-                            <span className="text-sm">PM10</span>
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                                type="checkbox"
-                                checked={showPM25}
-                                onChange={(e) => onPMChange('pm25', e.target.checked)}
-                                className="w-4 h-4 text-ami-azul rounded focus:ring-ami-azul"
-                            />
-                            <span className="text-sm">PM2.5</span>
-                        </label>
-                    </>
-                )}
             </div>
 
             {/* Action buttons */}
@@ -227,33 +263,81 @@ export default function FilterControls({
             <div className="flex flex-wrap gap-2 mb-3">
                 <button
                     onClick={handleFilter}
-                    disabled={isLoading}
+                    disabled={isLoading || isPreparingDownload || isDownloadingZip}
                     className="px-4 py-2 bg-ami-azul-claro text-white rounded hover:opacity-90 disabled:opacity-50 flex items-center gap-2"
                 >
                     Filtrar
                 </button>
                 <button
                     onClick={handleReset}
-                    disabled={isLoading}
+                    disabled={isLoading || isPreparingDownload || isDownloadingZip}
                     className="px-4 py-2 bg-gray-400 text-white rounded hover:opacity-90 disabled:opacity-50 flex items-center gap-2"
                 >
                     Reset
                 </button>
                 <button
                     onClick={handleDownloadCSV}
-                    disabled={!hasResults || isLoading}
+                    disabled={!hasResults || isLoading || isPreparingDownload || isDownloadingZip}
                     className="px-4 py-2 bg-ami-oro text-white rounded hover:opacity-90 disabled:opacity-50 flex items-center gap-2"
                 >
                     Descargar CSV
                 </button>
                 <button
                     onClick={handleDownloadZip}
-                    disabled={!hasResults || isLoading}
+                    disabled={!hasResults || isLoading || isPreparingDownload || isDownloadingZip}
                     className="px-4 py-2 bg-yellow-500 text-gray-900 rounded hover:opacity-90 disabled:opacity-50 flex items-center gap-2"
                 >
-                    Descargar imágenes
+                    {isPreparingDownload
+                        ? 'Calculando tamaño...'
+                        : isDownloadingZip
+                            ? 'Descargando imágenes...'
+                            : 'Descargar imágenes'}
                 </button>
             </div>
+
+            {downloadConfirmData && (
+                <div className="fixed inset-0 z-[2000] bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-slate-200">
+                        <div className="bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-300 px-5 py-4">
+                            <h3 className="text-lg font-bold text-slate-900">Confirmar descarga</h3>
+                            <p className="text-sm text-slate-800">Revisa el volumen antes de continuar.</p>
+                        </div>
+                        <div className="bg-white px-5 py-4 space-y-3 text-slate-700">
+                            <p>
+                                Se descargarán <span className="font-semibold text-slate-900">{downloadConfirmData.estimate.foundImages}</span> imágenes.
+                            </p>
+                            <p>
+                                Tamaño estimado total:{' '}
+                                <span className="font-semibold text-slate-900">
+                                    {formatBytes(downloadConfirmData.estimate.estimatedBytes)}
+                                </span>
+                                .
+                            </p>
+                            {downloadConfirmData.estimate.requestedIds > downloadConfirmData.estimate.foundImages && (
+                                <p className="text-sm text-amber-700">
+                                    Aviso: {downloadConfirmData.estimate.requestedIds - downloadConfirmData.estimate.foundImages} sensores no tienen imagen disponible.
+                                </p>
+                            )}
+                        </div>
+                        <div className="bg-slate-50 px-5 py-4 flex justify-end gap-2">
+                            <button
+                                onClick={() => setDownloadConfirmData(null)}
+                                disabled={isDownloadingZip}
+                                className="px-4 py-2 rounded-md border border-slate-300 text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleConfirmDownload}
+                                disabled={isDownloadingZip}
+                                className="px-4 py-2 rounded-md bg-ami-azul text-white hover:opacity-90 disabled:opacity-50"
+                            >
+                                {isDownloadingZip ? 'Descargando...' : 'Continuar descarga'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
