@@ -35,6 +35,17 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
     const mapRef = useRef<L.Map | null>(null);
     const markerRef = useRef<L.Marker | null>(null);
 
+    const openNativeDatePicker = (input: HTMLInputElement) => {
+        const pickerInput = input as HTMLInputElement & { showPicker?: () => void };
+        if (typeof pickerInput.showPicker === 'function') {
+            try {
+                pickerInput.showPicker();
+            } catch {
+                // Some browsers restrict showPicker in specific interaction contexts.
+            }
+        }
+    };
+
     useEffect(() => {
         if (step !== 2 || latitude === null || longitude === null || !mapContainerRef.current) return;
 
@@ -55,7 +66,8 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
             return;
         }
 
-        mapRef.current.setView([latitude, longitude], 14);
+        const currentZoom = mapRef.current.getZoom();
+        mapRef.current.setView([latitude, longitude], currentZoom);
         if (markerRef.current) {
             markerRef.current.setLatLng([latitude, longitude]);
         }
@@ -186,7 +198,20 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
     const handleSubmit = async () => {
         if (latitude === null || longitude === null || !processed) return;
 
-        const concentration = Number(processed.pollutionData?.concentration_standard || 0);
+        const pm10Concentration = Number(
+            processed.pollutionData?.PM10?.concentration_standard ??
+            processed.pollutionData?.concentration_standard_pm10 ??
+            0
+        );
+        const pm25Concentration = Number(
+            processed.pollutionData?.PM25?.concentration_standard ??
+            processed.pollutionData?.concentration_standard_pm25 ??
+            0
+        );
+        const pollutionLevelPM10 =
+            processed.pollutionLevels?.PM10 || 'Sin clasificar';
+        const pollutionLevelPM25 =
+            processed.pollutionLevels?.PM25 || 'Sin clasificar';
 
         setIsSubmitting(true);
         setErrorMessage('');
@@ -198,12 +223,11 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
                 endDate,
                 latitude,
                 longitude,
-                concentration,
-                pollutionLevel: processed.pollutionLevel,
+                pm10Concentration,
+                pm25Concentration,
+                pollutionLevelPM10,
+                pollutionLevelPM25,
                 inputImageB64: imageBase64,
-                roiImageB64: processed.roiImageB64,
-                binaryB64: processed.binaryB64,
-                overlayB64: processed.overlayB64,
                 analysisResults: {
                     numContours: Number(processed.analysisResults?.num_contours || 0),
                     areaPercentage: Number(processed.analysisResults?.area_percentage || 0),
@@ -213,11 +237,30 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
             setStep(5);
         } catch (error) {
             console.error(error);
-            setErrorMessage('No se pudo guardar el experimento.');
+            if (error instanceof Error && error.message) {
+                setErrorMessage(error.message);
+            } else {
+                setErrorMessage('No se pudo guardar el experimento.');
+            }
         } finally {
             setIsSubmitting(false);
         }
     };
+
+    const pm10Concentration = Number(
+        processed?.pollutionData?.PM10?.concentration_standard ??
+        processed?.pollutionData?.concentration_standard_pm10 ??
+        0
+    );
+    const pm25Concentration = Number(
+        processed?.pollutionData?.PM25?.concentration_standard ??
+        processed?.pollutionData?.concentration_standard_pm25 ??
+        0
+    );
+    const pollutionLevelPM10 =
+        processed?.pollutionLevels?.PM10 || 'Sin clasificar';
+    const pollutionLevelPM25 =
+        processed?.pollutionLevels?.PM25 || 'Sin clasificar';
 
     return (
         <div className="container mx-auto px-4 py-6">
@@ -250,7 +293,13 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
                 {successMessage && <div className="mb-4 rounded bg-green-100 text-green-800 px-3 py-2">{successMessage}</div>}
 
                 {step === 1 && (
-                    <div className="space-y-4">
+                    <form
+                        className="space-y-4"
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            handleDatesNext();
+                        }}
+                    >
                         <h2 className="font-semibold text-lg">Paso 1. ¿Cuándo se hizo el experimento?</h2>
                         <div>
                             <label className="block text-sm mb-1">Fecha de colocación</label>
@@ -258,6 +307,8 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
                                 type="date"
                                 value={startDate}
                                 onChange={(e) => setStartDate(e.target.value)}
+                                onFocus={(e) => openNativeDatePicker(e.currentTarget)}
+                                onClick={(e) => openNativeDatePicker(e.currentTarget)}
                                 className="w-full border border-gray-300 rounded px-3 py-2"
                             />
                         </div>
@@ -267,21 +318,32 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
                                 type="date"
                                 value={endDate}
                                 onChange={(e) => setEndDate(e.target.value)}
+                                onFocus={(e) => openNativeDatePicker(e.currentTarget)}
+                                onClick={(e) => openNativeDatePicker(e.currentTarget)}
                                 className="w-full border border-gray-300 rounded px-3 py-2"
                             />
                         </div>
                         <button
-                            type="button"
-                            onClick={handleDatesNext}
+                            type="submit"
                             className="px-4 py-2 rounded bg-ami-azul text-white"
                         >
                             Siguiente
                         </button>
-                    </div>
+                    </form>
                 )}
 
                 {step === 2 && (
-                    <div className="space-y-4">
+                    <form
+                        className="space-y-4"
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            if (latitude !== null && longitude !== null) {
+                                handleConfirmLocation();
+                                return;
+                            }
+                            void handleSearchLocation();
+                        }}
+                    >
                         <h2 className="font-semibold text-lg">Paso 2. ¿Dónde se hizo el experimento?</h2>
                         <div className="flex gap-2">
                             <input
@@ -292,8 +354,7 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
                                 className="flex-1 border border-gray-300 rounded px-3 py-2"
                             />
                             <button
-                                type="button"
-                                onClick={handleSearchLocation}
+                                type="submit"
                                 className="px-4 py-2 rounded bg-ami-azul text-white"
                             >
                                 Buscar
@@ -314,18 +375,27 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
                                 </button>
                             </>
                         )}
-                    </div>
+                    </form>
                 )}
 
                 {step === 3 && (
-                    <div className="space-y-4">
+                    <form
+                        className="space-y-4"
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            void handleAnalyzeImage();
+                        }}
+                    >
                         <h2 className="font-semibold text-lg">Paso 3. Carga la imagen del sensor</h2>
-                            <input type="file" accept="image/*" onChange={handleImageChange} />
-                            {isValidatingImage && (
-                                <p className="text-sm text-gray-600">
-                                    Validando que la imagen corresponda a un sensor...
-                                </p>
-                            )}
+                        <p className="text-sm text-gray-700">
+                            El análisis calcula automáticamente PM10 y PM2.5.
+                        </p>
+                        <input type="file" accept="image/*" onChange={handleImageChange} />
+                        {isValidatingImage && (
+                            <p className="text-sm text-gray-600">
+                                Validando que la imagen corresponda a un sensor...
+                            </p>
+                        )}
                         {imagePreview && (
                             <img
                                 src={imagePreview}
@@ -334,18 +404,23 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
                             />
                         )}
                         <button
-                            type="button"
-                            onClick={handleAnalyzeImage}
+                            type="submit"
                             disabled={isProcessing || isValidatingImage}
                             className="px-4 py-2 rounded bg-ami-azul text-white disabled:opacity-50"
                         >
                             {isProcessing ? 'Analizando...' : 'Analizar imagen'}
                         </button>
-                    </div>
+                    </form>
                 )}
 
                 {step === 4 && processed && (
-                    <div className="space-y-4">
+                    <form
+                        className="space-y-4"
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            void handleSubmit();
+                        }}
+                    >
                         <h2 className="font-semibold text-lg">Paso 4. Confirmación del área de interés (ROI)</h2>
                         <p className="text-sm text-gray-700">
                             Revisa que el área detectada sea correcta. Si no lo es, vuelve a cargar otra imagen.
@@ -384,15 +459,14 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
                                 No, reintentar
                             </button>
                             <button
-                                type="button"
-                                onClick={handleSubmit}
+                                type="submit"
                                 disabled={isSubmitting}
                                 className="px-4 py-2 rounded bg-green-600 text-white disabled:opacity-50"
                             >
                                 {isSubmitting ? 'Guardando...' : 'Sí, guardar resultado'}
                             </button>
                         </div>
-                    </div>
+                    </form>
                 )}
 
                 {step === 5 && processed && (
@@ -401,22 +475,40 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {processed.contourImageB64 && (
-                                <img src={`data:image/png;base64,${processed.contourImageB64}`} alt="Contour" className="rounded border border-gray-200" />
+                                <img
+                                    src={`data:image/png;base64,${processed.contourImageB64}`}
+                                    alt="Contour"
+                                    className="w-full h-64 object-contain rounded border border-gray-200 bg-white"
+                                />
                             )}
                             {processed.roiImageB64 && (
-                                <img src={`data:image/png;base64,${processed.roiImageB64}`} alt="ROI" className="rounded border border-gray-200" />
+                                <img
+                                    src={`data:image/png;base64,${processed.roiImageB64}`}
+                                    alt="ROI"
+                                    className="w-full h-64 object-contain rounded border border-gray-200 bg-white"
+                                />
                             )}
                             {processed.binaryB64 && (
-                                <img src={`data:image/png;base64,${processed.binaryB64}`} alt="Binary" className="rounded border border-gray-200" />
+                                <img
+                                    src={`data:image/png;base64,${processed.binaryB64}`}
+                                    alt="Binary"
+                                    className="w-full h-64 object-contain rounded border border-gray-200 bg-white"
+                                />
                             )}
                             {processed.overlayB64 && (
-                                <img src={`data:image/png;base64,${processed.overlayB64}`} alt="Overlay" className="rounded border border-gray-200" />
+                                <img
+                                    src={`data:image/png;base64,${processed.overlayB64}`}
+                                    alt="Overlay"
+                                    className="w-full h-64 object-contain rounded border border-gray-200 bg-white"
+                                />
                             )}
                         </div>
 
                         <div className="bg-gray-50 rounded p-4 border border-gray-200 text-sm">
-                            <p><strong>Concentración PM10:</strong> {Number(processed.pollutionData?.concentration_standard || 0).toFixed(2)} μg/m³</p>
-                            <p><strong>Nivel de polución:</strong> {processed.pollutionLevel}</p>
+                            <p><strong>Concentración PM10:</strong> {pm10Concentration.toFixed(2)} μg/m³</p>
+                            <p><strong>Nivel de polución PM10:</strong> {pollutionLevelPM10}</p>
+                            <p><strong>Concentración PM2.5:</strong> {pm25Concentration.toFixed(2)} μg/m³</p>
+                            <p><strong>Nivel de polución PM2.5:</strong> {pollutionLevelPM25}</p>
                             <p><strong>Número de contornos detectados:</strong> {Number(processed.analysisResults?.num_contours || 0)}</p>
                             <p><strong>Porcentaje de área detectada:</strong> {Number(processed.analysisResults?.area_percentage || 0).toFixed(3)}%</p>
                         </div>

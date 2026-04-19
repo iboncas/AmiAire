@@ -1,28 +1,68 @@
 import { getDatabase } from '../config/database.js';
+import { ObjectId } from 'mongodb';
+
+function getConfiguredCollections() {
+    const configured = (process.env.MONGODB_COLLECTION || '')
+        .split(',')
+        .map((name) => name.trim())
+        .filter(Boolean);
+
+    // Keep compatibility with legacy datasets while ensuring new records are visible.
+    if (configured.length) return configured;
+    return ['records', 'sensores'];
+}
+
+function numberOrNull(value) {
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    if (typeof value === 'string') {
+        const parsed = Number.parseFloat(value);
+        if (Number.isFinite(parsed)) return parsed;
+    }
+    return null;
+}
+
+function textOrNull(value) {
+    if (typeof value !== 'string') return null;
+    const trimmed = value.trim();
+    return trimmed ? trimmed : null;
+}
 
 /**
  * Maps MongoDB sensor document to frontend format
  */
 function mapSensorToFrontend(doc) {
-    const pm25 = doc['PM2.5'] || doc['PM25'] || doc['pm25'] || doc['pm2.5'];
-    const pm10 = doc['PM10'] || doc['pm10'];
+    const pm25 =
+        numberOrNull(doc['PM2.5']) ??
+        numberOrNull(doc['PM25']) ??
+        numberOrNull(doc['pm25']) ??
+        numberOrNull(doc['pm2.5']);
+    const pm10 = numberOrNull(doc['PM10']) ?? numberOrNull(doc['pm10']);
+    const latitude =
+        numberOrNull(doc['Localización latitud']) ?? numberOrNull(doc['Localizacion latitud']);
+    const longitude =
+        numberOrNull(doc['Localización longitud']) ?? numberOrNull(doc['Localizacion longitud']);
+    const effectiveConcentration = pm25 ?? pm10 ?? 0;
+    const pollutionLabel =
+        textOrNull(doc['Nivel de polución PM2.5']) ??
+        textOrNull(doc['Nivel de polución PM10']) ??
+        'Sin datos';
 
     return {
         id: doc._id.toString(),
         nombre: `Sensor ${doc._id.toString().slice(-6)}`,
         ubicacion: {
-            latitud: doc['Localización latitud'],
-            longitud: doc['Localización longitud']
+            latitud: latitude ?? Number.NaN,
+            longitud: longitude ?? Number.NaN,
         },
-        nivelPolucion: doc['Nivel de polución PM2.5'] || doc['Nivel de polución PM10'] || 'Sin datos',
+        nivelPolucion: pollutionLabel,
         metricas: {
-            concentracion: (typeof pm25 === 'number' ? pm25 : (typeof pm10 === 'number' ? pm10 : 0)),
-            pm25: typeof pm25 === 'number' ? pm25 : (pm25 !== undefined && pm25 !== null ? parseFloat(pm25) : null),
-            pm10: typeof pm10 === 'number' ? pm10 : (pm10 !== undefined && pm10 !== null ? parseFloat(pm10) : null)
+            concentracion: effectiveConcentration,
+            pm25,
+            pm10,
         },
         fechaInicio: doc['Fecha de inicio'],
         fechaRecogida: doc['Fecha de recogida'],
-        imagen: doc['Imagen de entrada']
+        imagen: doc['Imagen de entrada'],
     };
 }
 
@@ -32,11 +72,17 @@ function mapSensorToFrontend(doc) {
 export async function getAllSensors() {
     try {
         const db = getDatabase();
-        const collection = db.collection(process.env.MONGODB_COLLECTION || 'sensores');
+        const collections = getConfiguredCollections();
+        const docsById = new Map();
 
-        const sensors = await collection.find({}).toArray();
+        for (const collectionName of collections) {
+            const docs = await db.collection(collectionName).find({}).toArray();
+            for (const doc of docs) {
+                docsById.set(doc._id.toString(), doc);
+            }
+        }
 
-        return sensors.map(mapSensorToFrontend);
+        return Array.from(docsById.values()).map(mapSensorToFrontend);
     } catch (error) {
         console.error('Error fetching sensors:', error);
         throw error;
@@ -49,10 +95,14 @@ export async function getAllSensors() {
 export async function getSensorById(id) {
     try {
         const db = getDatabase();
-        const collection = db.collection(process.env.MONGODB_COLLECTION || 'sensores');
+        const collections = getConfiguredCollections();
+        const objectId = new ObjectId(id);
+        let sensor = null;
 
-        const { ObjectId } = await import('mongodb');
-        const sensor = await collection.findOne({ _id: new ObjectId(id) });
+        for (const collectionName of collections) {
+            sensor = await db.collection(collectionName).findOne({ _id: objectId });
+            if (sensor) break;
+        }
 
         if (!sensor) {
             return null;

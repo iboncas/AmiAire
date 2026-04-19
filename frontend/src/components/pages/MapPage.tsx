@@ -8,12 +8,15 @@ import type { Sensor } from '../../types/sensor';
 import { fetchSensores, fetchEstacionesOficiales, geocode } from '../../services/api';
 import { haversineKm } from '../../utils/sensorUtils';
 
-export default function MapPage() {
+interface MapPageProps {
+    isActive: boolean;
+}
+
+export default function MapPage({ isActive }: MapPageProps) {
     const [allSensors, setAllSensors] = useState<Sensor[]>([]);
     const [filteredSensors, setFilteredSensors] = useState<Sensor[]>([]);
     const [selectedSensor, setSelectedSensor] = useState<Sensor | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [showHeatmap, setShowHeatmap] = useState(false);
     const [mapCenter, setMapCenter] = useState<[number, number]>([40.4168, -3.7038]);
     const [mapZoom, setMapZoom] = useState(5);
     const [radiusCircle, setRadiusCircle] = useState<{
@@ -27,24 +30,18 @@ export default function MapPage() {
         radius: number;
         startDate: string;
         endDate: string;
-        strictDates: boolean;
         center: { lat: number; lon: number } | null;
     }>({
         city: '',
         radius: 10,
         startDate: '',
         endDate: '',
-        strictDates: false,
         center: null,
     });
 
     useEffect(() => {
         loadSensors();
     }, []);
-
-    const hasDateFilter =
-        Boolean(activeSearch.startDate) ||
-        Boolean(activeSearch.endDate);
 
     const refreshOfficialSensors = async (startDate?: string, endDate?: string) => {
         const official = await fetchEstacionesOficiales(startDate, endDate);
@@ -121,13 +118,8 @@ export default function MapPage() {
                 const validStart = sensorStart instanceof Date && !Number.isNaN(sensorStart.getTime());
                 const validEnd = sensorEnd instanceof Date && !Number.isNaN(sensorEnd.getTime());
 
-                if (searchState.strictDates) {
-                    if (hasStart && validStart) ok = sensorStart! >= start!;
-                    if (ok && hasEnd && validEnd) ok = sensorEnd! <= end!;
-                } else {
-                    if (hasStart && validEnd) ok = sensorEnd! >= start!;
-                    if (ok && hasEnd && validStart) ok = sensorStart! <= end!;
-                }
+                if (hasStart && validStart) ok = sensorStart! >= start!;
+                if (ok && hasEnd && validEnd) ok = sensorEnd! <= end!;
             }
 
             return ok;
@@ -139,29 +131,14 @@ export default function MapPage() {
         setFilteredSensors(filtered);
     }, [showDIY, showOfficial, allSensors, activeSearch]);
 
-    const heatmapSensors = hasDateFilter
-        ? filteredSensors
-        : applyFilters(
-            allSensors,
-            {
-                ...activeSearch,
-                startDate: '',
-                endDate: '',
-                strictDates: false,
-            },
-            false,
-            showOfficial
-        );
-
     const handleSearch = async (
         city: string,
         radius: number,
         startDate: string,
-        endDate: string,
-        strictDates: boolean
+        endDate: string
     ) => {
         if (!city && !startDate && !endDate) {
-            alert('Introduce una ciudad o un rango de fechas');
+            alert('Introduce una ubicación o un rango de fechas');
             return;
         }
 
@@ -201,14 +178,13 @@ export default function MapPage() {
                 radius,
                 startDate,
                 endDate,
-                strictDates,
                 center: centro,
             };
 
             setActiveSearch(newSearchState);
         } catch (error) {
             console.error('Geocoding error:', error);
-            alert('Ciudad no encontrada');
+            alert('Ubicación no encontrada');
         } finally {
             setIsLoading(false);
         }
@@ -232,13 +208,8 @@ export default function MapPage() {
             radius: 10,
             startDate: '',
             endDate: '',
-            strictDates: false,
             center: null,
         });
-    };
-
-    const handleToggleHeatmap = (show: boolean) => {
-        setShowHeatmap(show);
     };
 
     const handleSensorClick = (sensor: Sensor) => {
@@ -259,22 +230,18 @@ export default function MapPage() {
                             <FilterControls
                                 onFilter={handleSearch}
                                 onReset={handleReset}
-                                onToggleHeatmap={handleToggleHeatmap}
                                 filteredSensors={filteredSensors}
                                 isLoading={isLoading}
                                 showDIY={showDIY}
                                 showOfficial={showOfficial}
                                 onTypeChange={handleTypeChange}
-                                heatmapMode={hasDateFilter ? 'filtered' : 'realtime'}
                             />
                             <MapContainer
-                                key={`${showHeatmap ? 'heat' : 'normal'}-${showDIY}-${showOfficial}`}
                                 sensors={filteredSensors}
-                                heatmapSensors={heatmapSensors}
-                                showHeatmap={showHeatmap}
                                 center={mapCenter}
                                 zoom={mapZoom}
                                 radiusCircle={radiusCircle}
+                                isVisible={isActive}
                                 onSensorClick={handleSensorClick}
                             />
                         </div>

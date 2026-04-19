@@ -4,6 +4,20 @@ const router = express.Router();
 
 const ANALYSIS_SERVICE_URL = process.env.ANALYSIS_SERVICE_URL || 'http://localhost:8000';
 
+function normalizeModelType(modelType) {
+    if (typeof modelType !== 'string') return 'PM10';
+    const compact = modelType
+        .trim()
+        .toUpperCase()
+        .replace(/\s+/g, '')
+        .replace(/_/g, '')
+        .replace(',', '.')
+        .replace(/\./g, '');
+    if (compact === 'PM25') return 'PM25';
+    if (compact === 'PM10') return 'PM10';
+    return 'PM10';
+}
+
 router.get('/analysis/health', async (_req, res) => {
     try {
         const response = await fetch(`${ANALYSIS_SERVICE_URL}/health`);
@@ -27,7 +41,12 @@ router.get('/analysis/health', async (_req, res) => {
 router.post('/analysis/process', async (req, res) => {
     try {
         const imageB64 = typeof req.body?.imageB64 === 'string' ? req.body.imageB64 : '';
-        const modelType = typeof req.body?.modelType === 'string' ? req.body.modelType : 'PM10';
+        const modelType = normalizeModelType(req.body?.modelType);
+        const metadata = req.body?.metadata && typeof req.body.metadata === 'object' ? req.body.metadata : {};
+        const contextualData =
+            req.body?.contextualData && typeof req.body.contextualData === 'object'
+                ? req.body.contextualData
+                : {};
         if (!imageB64) {
             return res.status(400).json({
                 success: false,
@@ -43,7 +62,12 @@ router.post('/analysis/process', async (req, res) => {
             response = await fetch(`${ANALYSIS_SERVICE_URL}/process-image`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ image_b64: imageB64, model_type: modelType }),
+                body: JSON.stringify({
+                    image_b64: imageB64,
+                    model_type: modelType,
+                    metadata,
+                    contextual_data: contextualData,
+                }),
                 signal: controller.signal,
             });
         } finally {
@@ -62,6 +86,7 @@ router.post('/analysis/process', async (req, res) => {
                 success: false,
                 error: data?.error || `Image analysis failed (status ${response.status})`,
                 details: data?.details || (!data && rawText ? rawText.slice(0, 300) : undefined),
+                datasetOutputs: data?.dataset_outputs || null,
             });
         }
 
@@ -76,6 +101,8 @@ router.post('/analysis/process', async (req, res) => {
                 analysisResults: data.analysis_results || {},
                 pollutionData: data.pollution_data || {},
                 pollutionLevel: data.pollution_level || '',
+                pollutionLevels: data.pollution_levels || {},
+                datasetOutputs: data.dataset_outputs || null,
             },
         });
     } catch (error) {

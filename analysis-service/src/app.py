@@ -13,6 +13,11 @@ from sensor_classifier import (
     SensorImageValidationError,
     classify_sensor_image,
 )
+from dataset_features import (
+    build_empty_image_feature_record,
+    build_image_metadata_record,
+    get_feature_set_catalog,
+)
 
 
 app = Flask(__name__)
@@ -92,6 +97,8 @@ def process_image_endpoint():
     payload = request.get_json(silent=True) or {}
     image_b64 = payload.get('image_b64')
     model_type = payload.get('model_type', 'PM10')
+    image_metadata = payload.get('metadata') if isinstance(payload.get('metadata'), dict) else {}
+    contextual_data = payload.get('contextual_data') if isinstance(payload.get('contextual_data'), dict) else {}
 
     image_bgr = decode_base64_image(image_b64)
     if image_bgr is None:
@@ -111,12 +118,35 @@ def process_image_endpoint():
 
     image_with_contour, roi = extract_roi_from_image_array(image_bgr)
     if roi is None:
+        failed_metadata = build_image_metadata_record(
+            metadata=image_metadata,
+            roi_shape=None,
+            roi_detected=False,
+            analysis_success=False,
+            segmentation_success=False,
+            failure_reason='roi_not_detected',
+        )
         return jsonify({
             'success': False,
             'error': 'No se ha detectado la región de interés, por favor prueba de nuevo',
+            'dataset_outputs': {
+                'execution_scope': ['phase_1', 'phase_2', 'phase_3', 'phase_4'],
+                'images_metadata': failed_metadata,
+                'particles': [],
+                'image_features': build_empty_image_feature_record(
+                    failed_metadata,
+                    contextual_data=contextual_data,
+                ),
+                'feature_sets': get_feature_set_catalog(),
+            },
         }), 422
 
-    pipeline_results = process_roi(roi, model_type=model_type)
+    pipeline_results = process_roi(
+        roi,
+        model_type=model_type,
+        image_metadata=image_metadata,
+        contextual_data=contextual_data,
+    )
 
     return jsonify({
         'success': True,
@@ -125,9 +155,11 @@ def process_image_endpoint():
         'analysis_results': pipeline_results['analysis_results'],
         'pollution_data': pipeline_results['pollution_data'],
         'pollution_level': pipeline_results['classification'],
+        'pollution_levels': pipeline_results.get('classifications', {}),
         'binary_b64': pipeline_results['binary_mask_b64'],
         'overlay_b64': pipeline_results['overlay_b64'],
         'validation': validation,
+        'dataset_outputs': pipeline_results['dataset_outputs'],
     })
 
 

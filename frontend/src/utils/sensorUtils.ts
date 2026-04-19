@@ -1,7 +1,5 @@
 import type { Sensor } from '../types/sensor';
 
-const MAX_POLLUTION = 150;
-
 export function getCategoria(sensor: Sensor): string {
     // 1) If numeric concentration exists, use thresholds
     if (sensor.metricas?.concentracion !== undefined && sensor.metricas.concentracion > 0) {
@@ -35,40 +33,6 @@ export function getColorByConcentration(value: number | null | undefined): strin
     if (value >= 20) return '#fee08b';
     if (value >= 10) return '#91cf60';
     return '#1a9850';
-}
-
-export function getWeight(sensor: Sensor): number {
-    // Heatmap will use concentration if exists, otherwise default by category
-    const concentracion =
-        typeof sensor.metricas?.concentracion === 'number' &&
-        Number.isFinite(sensor.metricas.concentracion)
-            ? sensor.metricas.concentracion
-            : null;
-    if (concentracion !== null) {
-        return Math.min(concentracion / MAX_POLLUTION, 1);
-    }
-
-    const pm25 =
-        typeof sensor.metricas?.pm25 === 'number' && Number.isFinite(sensor.metricas.pm25)
-            ? sensor.metricas.pm25
-            : null;
-    if (pm25 !== null) {
-        return Math.min(pm25 / MAX_POLLUTION, 1);
-    }
-
-    const pm10 =
-        typeof sensor.metricas?.pm10 === 'number' && Number.isFinite(sensor.metricas.pm10)
-            ? sensor.metricas.pm10
-            : null;
-    if (pm10 !== null) {
-        return Math.min(pm10 / MAX_POLLUTION, 1);
-    }
-    const cat = getCategoria(sensor).toLowerCase();
-    if (cat.includes('extremo')) return 1;
-    if (cat.includes('alto')) return 0.7;
-    if (cat.includes('moderado')) return 0.4;
-    if (cat.includes('bueno')) return 0.1;
-    return 0.05; // No data
 }
 
 export function haversineKm(

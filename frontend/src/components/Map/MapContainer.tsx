@@ -1,15 +1,13 @@
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
-import 'leaflet.heat';
 import type { Sensor } from '../../types/sensor';
-import { getColor, getCategoria, getColorByConcentration, getWeight } from '../../utils/sensorUtils';
+import { getColor, getCategoria, getColorByConcentration } from '../../utils/sensorUtils';
 
 interface MapContainerProps {
     sensors: Sensor[];
-    heatmapSensors?: Sensor[];
-    showHeatmap: boolean;
     center?: [number, number];
     zoom?: number;
+    isVisible?: boolean;
     radiusCircle?: {
         center: [number, number];
         radiusKm: number;
@@ -19,16 +17,14 @@ interface MapContainerProps {
 
 export default function MapContainer({
     sensors,
-    heatmapSensors,
-    showHeatmap,
     center = [40.4168, -3.7038],
     zoom = 5,
+    isVisible = true,
     radiusCircle,
     onSensorClick,
 }: MapContainerProps) {
     const mapRef = useRef<L.Map | null>(null);
     const markerLayerRef = useRef<L.LayerGroup | null>(null);
-    const heatLayerRef = useRef<any>(null);
     const circleRef = useRef<L.Circle | null>(null);
 
     // Initialize map
@@ -53,10 +49,21 @@ export default function MapContainer({
 
     // Update map view when center/zoom changes
     useEffect(() => {
-        if (mapRef.current && center && zoom) {
-            mapRef.current.setView(center, zoom);
-        }
+        if (!mapRef.current) return;
+        mapRef.current.setView(center, zoom);
     }, [center, zoom]);
+
+    useEffect(() => {
+        if (!mapRef.current || !isVisible) return;
+
+        const raf = window.requestAnimationFrame(() => {
+            if (!mapRef.current) return;
+            mapRef.current.invalidateSize();
+            mapRef.current.setView(center, zoom, { animate: false });
+        });
+
+        return () => window.cancelAnimationFrame(raf);
+    }, [isVisible, center, zoom]);
 
     // Update markers
     useEffect(() => {
@@ -156,66 +163,6 @@ export default function MapContainer({
             markerLayerRef.current!.addLayer(marker);
         });
     }, [sensors, onSensorClick]);
-
-    // Update heatmap
-    useEffect(() => {
-        if (!mapRef.current) return;
-
-        const sourceSensors = Array.isArray(heatmapSensors) ? heatmapSensors : sensors;
-        const heatData = sourceSensors
-            .filter(s =>
-                s.ubicacion &&
-                typeof s.ubicacion.latitud === 'number' &&
-                typeof s.ubicacion.longitud === 'number' &&
-                isFinite(s.ubicacion.latitud) &&
-                isFinite(s.ubicacion.longitud)
-            )
-            .map((s) => [
-                s.ubicacion.latitud,
-                s.ubicacion.longitud,
-                getWeight(s),
-            ]) as [number, number, number][];
-
-        if (heatLayerRef.current) {
-            mapRef.current.removeLayer(heatLayerRef.current);
-        }
-
-        if (heatData.length > 0) {
-            // @ts-ignore - leaflet.heat types
-            heatLayerRef.current = L.heatLayer(heatData, {
-                radius: 35,
-                blur: 35,
-                maxZoom: 10,
-                gradient: {
-                    0: '#0000ff',
-                    0.25: '#00ffff',
-                    0.5: '#00ff00',
-                    0.75: '#ffff00',
-                    1: '#ff0000',
-                },
-            });
-            if (showHeatmap) {
-                heatLayerRef.current.addTo(mapRef.current);
-            }
-        }
-    }, [sensors, heatmapSensors, showHeatmap]);
-
-    // Toggle between normal and heatmap view
-    useEffect(() => {
-        if (!mapRef.current || !markerLayerRef.current) return;
-
-        if (showHeatmap) {
-            mapRef.current.removeLayer(markerLayerRef.current);
-            if (heatLayerRef.current) {
-                heatLayerRef.current.addTo(mapRef.current);
-            }
-        } else {
-            if (heatLayerRef.current) {
-                mapRef.current.removeLayer(heatLayerRef.current);
-            }
-            markerLayerRef.current.addTo(mapRef.current);
-        }
-    }, [showHeatmap]);
 
     // Update radius circle
     useEffect(() => {

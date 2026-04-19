@@ -8,8 +8,9 @@ const MINIO_ENDPOINT = process.env.MINIO_ENDPOINT || 'localhost';
 const MINIO_PORT = Number(process.env.MINIO_PORT || 9000);
 const MINIO_ACCESS_KEY = process.env.MINIO_ACCESS_KEY || 'minioadmin';
 const MINIO_SECRET_KEY = process.env.MINIO_SECRET_KEY || 'minioadmin';
-const MINIO_BUCKET = 'images';
+const MINIO_BUCKET = process.env.MINIO_BUCKET || 'images';
 const MINIO_PUBLIC_BASE_URL = process.env.MINIO_PUBLIC_BASE_URL || 'http://localhost:9000';
+const MINIO_REGION = process.env.MINIO_REGION || 'us-east-1';
 
 const minioClient = new MinioClient({
     endPoint: MINIO_ENDPOINT,
@@ -18,6 +19,27 @@ const minioClient = new MinioClient({
     accessKey: MINIO_ACCESS_KEY,
     secretKey: MINIO_SECRET_KEY,
 });
+
+let bucketReady = false;
+
+function numberOrNull(value) {
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    if (typeof value === 'string') {
+        const parsed = Number.parseFloat(value);
+        if (Number.isFinite(parsed)) return parsed;
+    }
+    return null;
+}
+
+async function ensureBucketExists() {
+    if (bucketReady) return;
+
+    const exists = await minioClient.bucketExists(MINIO_BUCKET);
+    if (!exists) {
+        await minioClient.makeBucket(MINIO_BUCKET, MINIO_REGION);
+    }
+    bucketReady = true;
+}
 
 function parseImagePayload(imageValue) {
     if (!imageValue || typeof imageValue !== 'string') return null;
@@ -53,10 +75,7 @@ async function uploadInputImageToMinio(inputImageB64) {
         throw new Error('Imagen de entrada vacía');
     }
 
-    const exists = await minioClient.bucketExists(MINIO_BUCKET);
-    if (!exists) {
-        throw new Error(`Bucket '${MINIO_BUCKET}' no existe en MinIO`);
-    }
+    await ensureBucketExists();
 
     const ext = getExtensionFromMime(mimeType);
     const objectName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
@@ -76,8 +95,10 @@ router.post('/experimentos', async (req, res) => {
             endDate,
             latitude,
             longitude,
-            concentration,
-            pollutionLevel,
+            pm10Concentration,
+            pm25Concentration,
+            pollutionLevelPM10,
+            pollutionLevelPM25,
             inputImageB64,
             analysisResults,
         } = req.body || {};
@@ -95,9 +116,32 @@ router.post('/experimentos', async (req, res) => {
             return res.status(400).json({ success: false, error: 'Coordenadas inválidas' });
         }
 
-        if (typeof concentration !== 'number' || Number.isNaN(concentration) || concentration < 0) {
-            return res.status(400).json({ success: false, error: 'Concentración inválida' });
+        const resolvedPm10 = numberOrNull(pm10Concentration);
+        const resolvedPm25 = numberOrNull(pm25Concentration);
+        if (resolvedPm10 === null || resolvedPm10 < 0 || resolvedPm25 === null || resolvedPm25 < 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'Concentraciones PM10/PM2.5 inválidas',
+            });
         }
+        if (typeof pollutionLevelPM10 !== 'string' || !pollutionLevelPM10.trim()) {
+            return res.status(400).json({
+                success: false,
+                error: 'Falta el nivel de polución PM10',
+            });
+        }
+        if (typeof pollutionLevelPM25 !== 'string' || !pollutionLevelPM25.trim()) {
+            return res.status(400).json({
+                success: false,
+                error: 'Falta el nivel de polución PM2.5',
+            });
+        }
+
+        const pm10Value = resolvedPm10;
+        const pm25Value = resolvedPm25;
+
+        const normalizedPollutionLevelPM10 = pollutionLevelPM10.trim();
+        const normalizedPollutionLevelPM25 = pollutionLevelPM25.trim();
 
         const db = getDatabase();
         const collection = db.collection(process.env.MONGODB_COLLECTION || 'records');
@@ -110,8 +154,10 @@ router.post('/experimentos', async (req, res) => {
             'Localización latitud': latitude,
             'Número de contornos detectados': Number(analysisResults?.numContours || 0),
             'Porcentaje de área detectada': Number(analysisResults?.areaPercentage || 0),
-            'Concentración estándar': concentration,
-            'Nivel de polución': pollutionLevel || 'Sin clasificar',
+            'PM10': pm10Value,
+            'PM2.5': pm25Value,
+            'Nivel de polución PM10': normalizedPollutionLevelPM10,
+            'Nivel de polución PM2.5': normalizedPollutionLevelPM25,
             'Imagen de entrada': inputImageUrl,
         };
 

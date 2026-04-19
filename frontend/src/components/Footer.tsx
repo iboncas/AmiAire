@@ -4,8 +4,15 @@ interface FooterProps {
 
 export default function Footer({ onNavigate }: FooterProps) {
     return (
-        <footer className="bg-white text-center text-gray-500 py-6 mt-8 border-t border-gray-200">
-            <div className="container mx-auto px-4">
+        <footer className="bg-white mt-8 border-t border-gray-200">
+            <div className="w-full">
+                <img
+                    src="/AmIAirelogos.jpg"
+                    alt="Entidades colaboradoras de AmiAire"
+                    className="w-full h-auto object-contain"
+                />
+            </div>
+            <div className="container mx-auto px-4 py-6 text-center text-gray-500 border-t border-gray-200">
                 <p className="mb-2">&copy; 2026 AmiAire. All Rights Reserved.</p>
                 <p className="mb-2">Desarrollado por DeustoTech, University of Deusto, Bilbao, Spain.</p>
                 <ul className="flex items-center justify-center gap-4 text-sm">

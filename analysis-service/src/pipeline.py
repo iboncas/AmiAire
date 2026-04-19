@@ -5,6 +5,13 @@ from json import JSONDecodeError
 
 import cv2
 import numpy as np
+from dataset_features import (
+    STANDARDIZED_ROI_SIZE,
+    build_image_feature_record,
+    build_image_metadata_record,
+    build_particle_records,
+    get_feature_set_catalog,
+)
 from skimage import exposure, filters, measure
 from skimage.util import img_as_ubyte
 
@@ -14,7 +21,26 @@ DEFAULT_REGRESSION_MODELS = {
 }
 
 
-def convert_to_grayscale_8bit_inmemory(image_bgr: np.ndarray, target_size: tuple = (1000, 1000)) -> np.ndarray:
+def normalize_model_type(model_type: str, default: str = "PM10") -> str:
+    if not isinstance(model_type, str):
+        return default
+
+    compact = (
+        model_type.strip()
+        .upper()
+        .replace(" ", "")
+        .replace("_", "")
+        .replace(",", ".")
+        .replace(".", "")
+    )
+    if compact == "PM10":
+        return "PM10"
+    if compact == "PM25":
+        return "PM25"
+    return default
+
+
+def convert_to_grayscale_8bit_inmemory(image_bgr: np.ndarray, target_size: tuple = STANDARDIZED_ROI_SIZE) -> np.ndarray:
     if image_bgr is None or not isinstance(image_bgr, np.ndarray):
         raise ValueError("Input must be a valid numpy array representing an image.")
 
@@ -73,7 +99,12 @@ def apply_sauvola_threshold_inmemory(gray_image: np.ndarray, window_size: int = 
     return binary
 
 
-def analyze_particles_inmemory(binary_image: np.ndarray, original_bgr: np.ndarray = None, filter_params: dict = None):
+def analyze_particles_inmemory(
+    binary_image: np.ndarray,
+    original_bgr: np.ndarray = None,
+    intensity_image: np.ndarray = None,
+    filter_params: dict = None,
+):
     if binary_image is None or binary_image.ndim != 2:
         raise ValueError("binary_image must be a 2D grayscale binary")
 
@@ -90,7 +121,7 @@ def analyze_particles_inmemory(binary_image: np.ndarray, original_bgr: np.ndarra
         }
 
     label_image = measure.label(binary_image > 0)
-    regions = measure.regionprops(label_image)
+    regions = measure.regionprops(label_image, intensity_image=intensity_image)
 
     filtered_regions = []
     for region in regions:
@@ -136,6 +167,7 @@ def analyze_particles_inmemory(binary_image: np.ndarray, original_bgr: np.ndarra
         'total_area': particle_area,
         'filtered_mask': filtered_mask,
         'overlay_bgr': overlay_bgr,
+        'filtered_regions': filtered_regions,
     }
 
 
@@ -173,14 +205,15 @@ def polution_level_inmemory(
     concentration_sensor_kg_m3 = mass_particles_kg / volume_sensor_m3 if volume_sensor_m3 > 0 else 0
     concentration_sensor_ug_m3 = concentration_sensor_kg_m3 * 1e9
 
+    model_type_norm = normalize_model_type(model_type)
     models = load_regression_models()
-    model = models.get(model_type, models.get("PM10", DEFAULT_REGRESSION_MODELS["PM10"]))
+    model = models.get(model_type_norm, models.get("PM10", DEFAULT_REGRESSION_MODELS["PM10"]))
     slope = float(model.get("slope", DEFAULT_REGRESSION_MODELS["PM10"]["slope"]))
     intercept = float(model.get("intercept", DEFAULT_REGRESSION_MODELS["PM10"]["intercept"]))
     concentration_standard = intercept + slope * concentration_sensor_ug_m3
 
     return {
-        'model_type': model_type,
+        'model_type': model_type_norm,
         'num_particles': float(particles),
         'concentration_sensor': float(concentration_sensor_ug_m3),
         'particles_per_contour': float(particles_per_contour),
@@ -202,27 +235,53 @@ def classification_inmemory(concentration: float) -> str:
     return "Nivel de polución Extremo, mas de 150 μg/m³"
 
 
-def process_roi(roi_bgr: np.ndarray, model_type: str = "PM10"):
-    gray = convert_to_grayscale_8bit_inmemory(roi_bgr, (1000, 1000))
+def process_roi(
+    roi_bgr: np.ndarray,
+    model_type: str = "PM10",
+    image_metadata: dict = None,
+    contextual_data: dict = None,
+):
+    gray = convert_to_grayscale_8bit_inmemory(roi_bgr, STANDARDIZED_ROI_SIZE)
     bg_improved = improve_background_inmemory(gray, kernel_size=(21, 21), sigma=10.0)
     rescaled = rescale_intensity_inmemory(bg_improved, in_range_percent=(0, 20))
     clahe_result = clahe_skimage_inmemory(rescaled, clip_limit=0.004, nbins=12)
     binary_mask = apply_sauvola_threshold_inmemory(clahe_result, window_size=21, k=0.18, invert=True)
-    resized_bgr = cv2.resize(roi_bgr, (1000, 1000), interpolation=cv2.INTER_CUBIC)
+    resized_bgr = cv2.resize(roi_bgr, STANDARDIZED_ROI_SIZE, interpolation=cv2.INTER_CUBIC)
 
-    analysis_results = analyze_particles_inmemory(binary_mask, resized_bgr)
-    model_type_norm = (model_type or "PM10").upper()
-    if model_type_norm not in {"PM10", "PM25"}:
-        model_type_norm = "PM10"
+    analysis_results = analyze_particles_inmemory(binary_mask, resized_bgr, intensity_image=clahe_result)
+    selected_model_type = normalize_model_type(model_type)
 
-    particle_diameter = 10.0 if model_type_norm == "PM10" else 2.5
-    pollution_data = polution_level_inmemory(
+    pm10_data = polution_level_inmemory(
         analysis_results,
-        model_type=model_type_norm,
-        particle_diameter_microns=particle_diameter,
+        model_type="PM10",
+        particle_diameter_microns=10.0,
         particle_density_g_cm3=1.65,
     )
-    classification_str = classification_inmemory(pollution_data['concentration_standard'])
+    pm25_data = polution_level_inmemory(
+        analysis_results,
+        model_type="PM25",
+        particle_diameter_microns=2.5,
+        particle_density_g_cm3=1.65,
+    )
+    classifications = {
+        "PM10": classification_inmemory(pm10_data["concentration_standard"]),
+        "PM25": classification_inmemory(pm25_data["concentration_standard"]),
+    }
+    selected_pollution_data = pm10_data if selected_model_type == "PM10" else pm25_data
+    selected_classification = classifications[selected_model_type]
+    pollution_data = {
+        "model_type": "BOTH",
+        "selected_model_type": selected_model_type,
+        "PM10": pm10_data,
+        "PM25": pm25_data,
+        "concentration_standard_pm10": float(pm10_data["concentration_standard"]),
+        "concentration_standard_pm25": float(pm25_data["concentration_standard"]),
+        # Legacy compatibility (mirrors selected model)
+        "concentration_standard": float(selected_pollution_data["concentration_standard"]),
+        "concentration_sensor": float(selected_pollution_data["concentration_sensor"]),
+        "num_particles": float(selected_pollution_data["num_particles"]),
+        "particles_per_contour": float(selected_pollution_data["particles_per_contour"]),
+    }
 
     _, mask_encoded = cv2.imencode('.png', analysis_results['filtered_mask'])
     binary_mask_b64 = base64.b64encode(mask_encoded).decode('utf-8')
@@ -232,6 +291,24 @@ def process_roi(roi_bgr: np.ndarray, model_type: str = "PM10"):
         _, overlay_encoded = cv2.imencode('.png', analysis_results['overlay_bgr'])
         overlay_b64 = base64.b64encode(overlay_encoded).decode('utf-8')
 
+    resolved_image_metadata = build_image_metadata_record(
+        metadata=image_metadata,
+        roi_shape=clahe_result.shape,
+        roi_detected=True,
+        analysis_success=True,
+    )
+    particle_records = build_particle_records(
+        analysis_results["filtered_regions"],
+        clahe_result,
+        image_id=resolved_image_metadata.get("image_id"),
+    )
+    image_features = build_image_feature_record(
+        resolved_image_metadata,
+        particle_records,
+        clahe_result,
+        contextual_data=contextual_data,
+    )
+
     return {
         "analysis_results": {
             "num_contours": analysis_results["num_contours"],
@@ -239,7 +316,15 @@ def process_roi(roi_bgr: np.ndarray, model_type: str = "PM10"):
             "total_area": analysis_results["total_area"],
         },
         "pollution_data": pollution_data,
-        "classification": classification_str,
+        "classification": selected_classification,
+        "classifications": classifications,
         "binary_mask_b64": binary_mask_b64,
         "overlay_b64": overlay_b64,
+        "dataset_outputs": {
+            "execution_scope": ["phase_1", "phase_2", "phase_3", "phase_4"],
+            "images_metadata": resolved_image_metadata,
+            "particles": particle_records,
+            "image_features": image_features,
+            "feature_sets": get_feature_set_catalog(),
+        },
     }

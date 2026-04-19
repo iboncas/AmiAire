@@ -12,7 +12,7 @@ export default function Header({ activeView, onNavigate }: HeaderProps) {
                     onClick={() => onNavigate('analysis')}
                     className="flex items-center text-gray-900 no-underline bg-transparent border-0 p-0 cursor-pointer"
                 >
-                    <img src="/logo.png" alt="AmIAire" className="h-10 mr-2" />
+                    <img src="/icono.png" alt="AmIAire" className="h-10 mr-2" />
                 </button>
 
                 <nav className="flex items-center gap-2">

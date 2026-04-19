@@ -8,6 +8,61 @@ import type {
 const API_URL =
     '/api/sensores?fields=id,nombre,ubicacion,nivelPolucion,metricas.concentracion,metricas.pm25,metricas.pm10,fechaInicio,fechaRecogida';
 
+type ApiEnvelope<T> = {
+    success?: boolean;
+    data?: T;
+    error?: string;
+    details?: string;
+};
+
+type ParsedResponse<T> = {
+    data: T | null;
+    rawText: string;
+    contentType: string;
+};
+
+async function parseApiResponse<T>(response: Response): Promise<ParsedResponse<T>> {
+    const rawText = await response.text();
+    const contentType = response.headers.get('content-type') || '';
+    if (!rawText) {
+        return { data: null, rawText, contentType };
+    }
+
+    try {
+        const parsed = JSON.parse(rawText) as T;
+        return { data: parsed, rawText, contentType };
+    } catch {
+        return { data: null, rawText, contentType };
+    }
+}
+
+function buildApiError(
+    response: Response,
+    parsed: ParsedResponse<ApiEnvelope<unknown>>,
+    fallbackMessage: string
+): string {
+    const data = parsed.data;
+    const baseError = typeof data?.error === 'string' ? data.error : fallbackMessage;
+    const details = typeof data?.details === 'string' ? data.details : '';
+    if (details) {
+        return `${baseError}: ${details}`;
+    }
+
+    if (response.status === 413) {
+        return 'La imagen es demasiado grande para el servidor de producción.';
+    }
+
+    const looksLikeHtml =
+        parsed.contentType.includes('text/html') ||
+        parsed.rawText.trimStart().startsWith('<!DOCTYPE') ||
+        parsed.rawText.trimStart().startsWith('<html');
+    if (looksLikeHtml) {
+        return `${fallbackMessage} (status ${response.status}). El servidor respondió HTML en lugar de JSON.`;
+    }
+
+    return `${baseError} (status ${response.status})`;
+}
+
 function parseOfficialStationsCsv(csvText: string): Sensor[] {
     const rawLines = csvText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
     if (!rawLines.length) return [];
@@ -26,7 +81,7 @@ function parseOfficialStationsCsv(csvText: string): Sensor[] {
     const lines = rawLines.slice(1);
 
     return lines
-        .map((line, index) => {
+        .map((line, index): Sensor | null => {
             const parts = line.split(',');
             if (parts.length < 3) return null;
 
@@ -59,8 +114,8 @@ function parseOfficialStationsCsv(csvText: string): Sensor[] {
                 nivelPolucion: 'Sin datos',
                 fechaInicio: '',
                 fechaRecogida: '',
-                type: 'official' as const,
-            } satisfies Sensor;
+                type: 'official',
+            };
         })
         .filter((station): station is Sensor => station !== null);
 }
@@ -136,7 +191,7 @@ export async function geocode(city: string): Promise<{ lat: number; lon: number 
     )}`;
     const response = await fetch(url);
     const data: GeocodingResult[] = await response.json();
-    if (!data.length) throw new Error('Ciudad no encontrada');
+    if (!data.length) throw new Error('Ubicación no encontrada');
     return { lat: +data[0].lat, lon: +data[0].lon };
 }
 
@@ -199,14 +254,44 @@ export interface ProcessedAnalysis {
         total_area?: number;
     };
     pollutionData: {
+        model_type?: string;
+        selected_model_type?: string;
+        PM10?: {
+            concentration_standard?: number;
+            concentration_sensor?: number;
+            num_particles?: number;
+            particles_per_contour?: number;
+            model_type?: string;
+        };
+        PM25?: {
+            concentration_standard?: number;
+            concentration_sensor?: number;
+            num_particles?: number;
+            particles_per_contour?: number;
+            model_type?: string;
+        };
+        concentration_standard_pm10?: number;
+        concentration_standard_pm25?: number;
         concentration_standard?: number;
         concentration_sensor?: number;
         num_particles?: number;
         particles_per_contour?: number;
-        model_type?: string;
     };
     pollutionLevel: string;
+    pollutionLevels?: {
+        PM10?: string;
+        PM25?: string;
+    };
+    datasetOutputs?: {
+        execution_scope?: string[];
+        images_metadata?: Record<string, unknown>;
+        particles?: Array<Record<string, unknown>>;
+        image_features?: Record<string, unknown>;
+        feature_sets?: Record<string, string[]>;
+    } | null;
 }
+
+export type PollutionModelType = 'PM10' | 'PM25';
 
 export interface SensorValidationResult {
     is_sensor: boolean;
@@ -225,29 +310,34 @@ export async function validateSensorImage(imageB64: string): Promise<SensorValid
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imageB64 }),
     });
-    const data = await response.json();
+    const parsed = await parseApiResponse<ApiEnvelope<SensorValidationResult>>(response);
+    const data = parsed.data;
     if (!response.ok || !data?.success) {
-        throw new Error(
-            data?.details ? `${data?.error}: ${data.details}` : (data?.error || 'Error validando la imagen')
-        );
+        throw new Error(buildApiError(response, parsed, 'Error validando la imagen'));
+    }
+    if (!data.data) {
+        throw new Error('Respuesta inválida del servidor al validar la imagen');
     }
     return data.data as SensorValidationResult;
 }
 
 export async function processAnalysisImage(
     imageB64: string,
-    modelType: 'PM10' | 'PM25' = 'PM10'
+    modelType?: PollutionModelType
 ): Promise<ProcessedAnalysis> {
+    const payload = modelType ? { imageB64, modelType } : { imageB64 };
     const response = await fetch('/api/analysis/process', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageB64, modelType }),
+        body: JSON.stringify(payload),
     });
-    const data = await response.json();
+    const parsed = await parseApiResponse<ApiEnvelope<ProcessedAnalysis>>(response);
+    const data = parsed.data;
     if (!response.ok || !data?.success) {
-        throw new Error(
-            data?.details ? `${data?.error}: ${data.details}` : (data?.error || 'Error procesando imagen')
-        );
+        throw new Error(buildApiError(response, parsed, 'Error procesando imagen'));
+    }
+    if (!data.data) {
+        throw new Error('Respuesta inválida del servidor al procesar la imagen');
     }
     return data.data as ProcessedAnalysis;
 }
@@ -257,12 +347,11 @@ export async function submitExperiment(payload: {
     endDate: string;
     latitude: number;
     longitude: number;
-    concentration: number;
-    pollutionLevel: string;
+    pm10Concentration: number;
+    pm25Concentration: number;
+    pollutionLevelPM10: string;
+    pollutionLevelPM25: string;
     inputImageB64: string;
-    roiImageB64?: string;
-    binaryB64?: string;
-    overlayB64?: string;
     analysisResults: {
         numContours: number;
         areaPercentage: number;
@@ -274,10 +363,26 @@ export async function submitExperiment(payload: {
         body: JSON.stringify(payload),
     });
 
-    if (!response.ok) {
-        const data = await response.json().catch(() => null);
-        throw new Error(data?.error || 'Error guardando experimento');
+    const parsed = await parseApiResponse<{
+        success?: boolean;
+        id?: string;
+        imageUrl?: string;
+        error?: string;
+        details?: string;
+    }>(response);
+    const data = parsed.data;
+    if (!response.ok || !data?.success) {
+        const normalizedForError: ParsedResponse<ApiEnvelope<unknown>> = {
+            ...parsed,
+            data: data
+                ? {
+                      error: data.error,
+                      details: data.details,
+                  }
+                : null,
+        };
+        throw new Error(buildApiError(response, normalizedForError, 'Error guardando experimento'));
     }
 
-    return response.json();
+    return { success: true, id: data.id, imageUrl: data.imageUrl };
 }
