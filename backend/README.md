@@ -53,8 +53,8 @@ MongoDB schema → Frontend format:
 - `_id` → `id`
 - `Localización latitud` → `ubicacion.latitud`
 - `Localización longitud` → `ubicacion.longitud`
-- `PM2.5` → `metricas.concentracion`
-- `Nivel de polución PM2.5` → `nivelPolucion`
+- `PM2.5` / `PM10` → `metricas.concentracion`
+- `nivelPolucion` se calcula en la aplicación a partir de la concentración, no se lee de MongoDB
 - `Fecha de inicio` → `fechaInicio`
 - `Fecha de recogida` → `fechaRecogida`
 - `Imagen de entrada` → `imagen`

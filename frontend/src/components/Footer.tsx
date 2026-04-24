@@ -2,6 +2,9 @@ interface FooterProps {
     onNavigate: (view: 'analysis' | 'map') => void;
 }
 
+const ANALYSIS_PATH = '/';
+const MAP_PATH = '/map_contributions';
+
 export default function Footer({ onNavigate }: FooterProps) {
     return (
         <footer className="bg-white mt-8 border-t border-gray-200">
@@ -17,22 +20,28 @@ export default function Footer({ onNavigate }: FooterProps) {
                 <p className="mb-2">Desarrollado por DeustoTech, University of Deusto, Bilbao, Spain.</p>
                 <ul className="flex items-center justify-center gap-4 text-sm">
                     <li>
-                        <button
-                            type="button"
-                            onClick={() => onNavigate('analysis')}
-                            className="text-gray-500 hover:text-ami-azul bg-transparent border-0 cursor-pointer p-0"
+                        <a
+                            href={ANALYSIS_PATH}
+                            onClick={(event) => {
+                                event.preventDefault();
+                                onNavigate('analysis');
+                            }}
+                            className="text-gray-500 hover:text-ami-azul"
                         >
-                            Herramienta Análisis de polución
-                        </button>
+                            Herramienta Análisis de contaminación
+                        </a>
                     </li>
                     <li>
-                        <button
-                            type="button"
-                            onClick={() => onNavigate('map')}
-                            className="text-gray-500 hover:text-ami-azul bg-transparent border-0 cursor-pointer p-0"
+                        <a
+                            href={MAP_PATH}
+                            onClick={(event) => {
+                                event.preventDefault();
+                                onNavigate('map');
+                            }}
+                            className="text-gray-500 hover:text-ami-azul"
                         >
                             Mapa de AmiAire
-                        </button>
+                        </a>
                     </li>
                 </ul>
             </div>

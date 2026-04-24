@@ -1,12 +1,6 @@
-export default function Legend() {
-    const levels = [
-        { name: 'Extremo', color: '#d73027', range: '≥ 150 μg/m³' },
-        { name: 'Alto', color: '#fc8d59', range: '50 – 149 μg/m³' },
-        { name: 'Moderado', color: '#fee08b', range: '20 – 49 μg/m³' },
-        { name: 'Bueno', color: '#91cf60', range: '10 – 19 μg/m³' },
-        { name: 'Bajo', color: '#1a9850', range: '< 10 μg/m³' },
-    ];
+import { POLLUTION_LEVELS } from '../constants/pollutionLevels';
 
+export default function Legend() {
     return (
         <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4">
             <div className="bg-ami-azul text-white px-4 py-3">
@@ -38,7 +32,7 @@ export default function Legend() {
                         <span>Triángulo: estaciones oficiales. Izquierda PM10, derecha PM2.5.</span>
                     </div>
                 </div>
-                {levels.map((level) => (
+                {POLLUTION_LEVELS.map((level) => (
                     <div key={level.name} className="flex items-center gap-2 mb-2 text-sm">
                         <span
                             className="w-[18px] h-[18px] inline-block border border-gray-800 rounded"

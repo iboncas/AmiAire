@@ -97,8 +97,6 @@ router.post('/experimentos', async (req, res) => {
             longitude,
             pm10Concentration,
             pm25Concentration,
-            pollutionLevelPM10,
-            pollutionLevelPM25,
             inputImageB64,
             analysisResults,
         } = req.body || {};
@@ -124,24 +122,9 @@ router.post('/experimentos', async (req, res) => {
                 error: 'Concentraciones PM10/PM2.5 inválidas',
             });
         }
-        if (typeof pollutionLevelPM10 !== 'string' || !pollutionLevelPM10.trim()) {
-            return res.status(400).json({
-                success: false,
-                error: 'Falta el nivel de polución PM10',
-            });
-        }
-        if (typeof pollutionLevelPM25 !== 'string' || !pollutionLevelPM25.trim()) {
-            return res.status(400).json({
-                success: false,
-                error: 'Falta el nivel de polución PM2.5',
-            });
-        }
 
         const pm10Value = resolvedPm10;
         const pm25Value = resolvedPm25;
-
-        const normalizedPollutionLevelPM10 = pollutionLevelPM10.trim();
-        const normalizedPollutionLevelPM25 = pollutionLevelPM25.trim();
 
         const db = getDatabase();
         const collection = db.collection(process.env.MONGODB_COLLECTION || 'records');
@@ -156,8 +139,6 @@ router.post('/experimentos', async (req, res) => {
             'Porcentaje de área detectada': Number(analysisResults?.areaPercentage || 0),
             'PM10': pm10Value,
             'PM2.5': pm25Value,
-            'Nivel de polución PM10': normalizedPollutionLevelPM10,
-            'Nivel de polución PM2.5': normalizedPollutionLevelPM25,
             'Imagen de entrada': inputImageUrl,
         };
 

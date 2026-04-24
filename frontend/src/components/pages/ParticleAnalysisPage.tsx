@@ -7,12 +7,35 @@ import {
     validateSensorImage,
     type ProcessedAnalysis,
 } from '../../services/api';
+import { POLLUTION_LEVELS } from '../../constants/pollutionLevels';
 
 interface ParticleAnalysisPageProps {
     onOpenMap: () => void;
 }
 
 type Step = 1 | 2 | 3 | 4 | 5;
+
+function getPollutionLevelLabel(concentration: number): string {
+    if (!Number.isFinite(concentration) || concentration < 0) {
+        return 'Sin clasificar';
+    }
+    if (concentration <= 10) {
+        return 'Nivel de contaminación Muy bueno, menos de 10 μg/m³';
+    }
+    if (concentration < 20) {
+        return 'Nivel de contaminación Bueno, entre 10 y 19 μg/m³';
+    }
+    if (concentration < 50) {
+        return 'Nivel de contaminación Moderado, entre 20 y 49 μg/m³';
+    }
+    if (concentration < 100) {
+        return 'Nivel de contaminación Malo, entre 50 y 99 μg/m³';
+    }
+    if (concentration < 150) {
+        return 'Nivel de contaminación Muy malo, entre 100 y 150 μg/m³';
+    }
+    return 'Nivel de contaminación Extremo, más de 150 μg/m³';
+}
 
 export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPageProps) {
     const [step, setStep] = useState<Step>(1);
@@ -208,10 +231,14 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
             processed.pollutionData?.concentration_standard_pm25 ??
             0
         );
-        const pollutionLevelPM10 =
-            processed.pollutionLevels?.PM10 || 'Sin clasificar';
-        const pollutionLevelPM25 =
-            processed.pollutionLevels?.PM25 || 'Sin clasificar';
+        const pollutionLevelPM10 = getPollutionLevelLabel(pm10Concentration);
+        const pollutionLevelPM25 = getPollutionLevelLabel(pm25Concentration);
+        const selectedModelType =
+            processed.pollutionData?.selected_model_type === 'PM25' ? 'PM25' : 'PM10';
+        const legacyConcentration =
+            selectedModelType === 'PM25' ? pm25Concentration : pm10Concentration;
+        const legacyPollutionLevel =
+            selectedModelType === 'PM25' ? pollutionLevelPM25 : pollutionLevelPM10;
 
         setIsSubmitting(true);
         setErrorMessage('');
@@ -225,8 +252,8 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
                 longitude,
                 pm10Concentration,
                 pm25Concentration,
-                pollutionLevelPM10,
-                pollutionLevelPM25,
+                concentration: legacyConcentration,
+                pollutionLevel: legacyPollutionLevel,
                 inputImageB64: imageBase64,
                 analysisResults: {
                     numContours: Number(processed.analysisResults?.num_contours || 0),
@@ -257,10 +284,11 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
         processed?.pollutionData?.concentration_standard_pm25 ??
         0
     );
-    const pollutionLevelPM10 =
-        processed?.pollutionLevels?.PM10 || 'Sin clasificar';
-    const pollutionLevelPM25 =
-        processed?.pollutionLevels?.PM25 || 'Sin clasificar';
+    const pollutionLevelPM10 = getPollutionLevelLabel(pm10Concentration);
+    const pollutionLevelPM25 = getPollutionLevelLabel(pm25Concentration);
+    const areaPercentageRoundedUp = (
+        Math.ceil(Number(processed?.analysisResults?.area_percentage || 0) * 1000) / 1000
+    ).toFixed(3);
 
     return (
         <div className="container mx-auto px-4 py-6">
@@ -285,9 +313,27 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
             )}
 
             <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-sm p-6">
-                <h1 className="text-2xl font-bold text-ami-azul mb-4">
-                    Herramienta de análisis de calidad del aire
-                </h1>
+                <div className="mb-4 space-y-2 text-center">
+                    <h1 className="text-2xl font-bold text-ami-azul">
+                        Herramienta Digital De Contaminación - Análisis De La Calidad Del Aire
+                    </h1>
+                    <p className="text-sm text-gray-700">
+                        Bienvenid@ a la web de análisis de datos del proyecto AmIAire
+                    </p>
+                    <p className="text-sm text-gray-700">
+                        En esta sencilla web de cinco pasos podrás:
+                    </p>
+                    <div className="inline-block text-left text-sm text-gray-700">
+                        <p>1) Introducir las fechas del experimento</p>
+                        <p>2) Seleccionar la ubicación exacta dónde estaba colocado el sensor</p>
+                        <p>3) Subir la foto de tu sensor de vaselina</p>
+                        <p>4) Validar si detectamos bien la zona del sensor a analizar</p>
+                        <p>
+                            5) Ver los resultados del análisis a nive de concentración de material
+                            particulado en el aire y explorar los datos en un mapa
+                        </p>
+                    </div>
+                </div>
 
                 {errorMessage && <div className="mb-4 rounded bg-red-100 text-red-800 px-3 py-2">{errorMessage}</div>}
                 {successMessage && <div className="mb-4 rounded bg-green-100 text-green-800 px-3 py-2">{successMessage}</div>}
@@ -473,63 +519,105 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
                     <div className="space-y-4">
                         <h2 className="font-semibold text-lg">Resultados del análisis</h2>
 
+                        <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+                            <p className="text-sm leading-6 text-gray-700">
+                                A partir de la imagen del sensor, el sistema detecta la región de interés,
+                                extrae las partículas visibles, genera una máscara binaria para aislarlas y
+                                calcula métricas que permiten estimar los niveles de PM10 y PM2.5.
+                            </p>
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {processed.contourImageB64 && (
-                                <img
-                                    src={`data:image/png;base64,${processed.contourImageB64}`}
-                                    alt="Contour"
-                                    className="w-full h-64 object-contain rounded border border-gray-200 bg-white"
-                                />
+                                <div>
+                                    <h3 className="font-medium mb-2">Detección de la región</h3>
+                                    <img
+                                        src={`data:image/png;base64,${processed.contourImageB64}`}
+                                        alt="Contour"
+                                        className="w-full h-64 object-contain rounded border border-gray-200 bg-white"
+                                    />
+                                </div>
                             )}
                             {processed.roiImageB64 && (
-                                <img
-                                    src={`data:image/png;base64,${processed.roiImageB64}`}
-                                    alt="ROI"
-                                    className="w-full h-64 object-contain rounded border border-gray-200 bg-white"
-                                />
+                                <div>
+                                    <h3 className="font-medium mb-2">ROI extraído</h3>
+                                    <img
+                                        src={`data:image/png;base64,${processed.roiImageB64}`}
+                                        alt="ROI"
+                                        className="w-full h-64 object-contain rounded border border-gray-200 bg-white"
+                                    />
+                                </div>
                             )}
                             {processed.binaryB64 && (
-                                <img
-                                    src={`data:image/png;base64,${processed.binaryB64}`}
-                                    alt="Binary"
-                                    className="w-full h-64 object-contain rounded border border-gray-200 bg-white"
-                                />
+                                <div>
+                                    <h3 className="font-medium mb-2">Máscara binaria de partículas</h3>
+                                    <img
+                                        src={`data:image/png;base64,${processed.binaryB64}`}
+                                        alt="Binary"
+                                        className="w-full h-64 object-contain rounded border border-gray-200 bg-white"
+                                    />
+                                </div>
                             )}
                             {processed.overlayB64 && (
-                                <img
-                                    src={`data:image/png;base64,${processed.overlayB64}`}
-                                    alt="Overlay"
-                                    className="w-full h-64 object-contain rounded border border-gray-200 bg-white"
-                                />
+                                <div>
+                                    <h3 className="font-medium mb-2">Superposición final con contornos detectados</h3>
+                                    <img
+                                        src={`data:image/png;base64,${processed.overlayB64}`}
+                                        alt="Overlay"
+                                        className="w-full h-64 object-contain rounded border border-gray-200 bg-white"
+                                    />
+                                </div>
                             )}
                         </div>
 
                         <div className="bg-gray-50 rounded p-4 border border-gray-200 text-sm">
                             <p><strong>Concentración PM10:</strong> {pm10Concentration.toFixed(2)} μg/m³</p>
-                            <p><strong>Nivel de polución PM10:</strong> {pollutionLevelPM10}</p>
+                            <p><strong>Nivel de contaminación PM10:</strong> {pollutionLevelPM10}</p>
                             <p><strong>Concentración PM2.5:</strong> {pm25Concentration.toFixed(2)} μg/m³</p>
-                            <p><strong>Nivel de polución PM2.5:</strong> {pollutionLevelPM25}</p>
-                            <p><strong>Número de contornos detectados:</strong> {Number(processed.analysisResults?.num_contours || 0)}</p>
-                            <p><strong>Porcentaje de área detectada:</strong> {Number(processed.analysisResults?.area_percentage || 0).toFixed(3)}%</p>
+                            <p><strong>Nivel de contaminación PM2.5:</strong> {pollutionLevelPM25}</p>
+                            <p>
+                                <strong>Número de contornos detectados </strong>
+                                <strong>(en verde en la última imagen)</strong>
+                                : {Number(processed.analysisResults?.num_contours || 0)}
+                            </p>
+                            <p><strong>Porcentaje de área detectada:</strong> {areaPercentageRoundedUp}%</p>
                         </div>
 
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm border border-gray-200">
                                 <thead className="bg-gray-100">
                                     <tr>
+                                        <th className="text-left p-2 border-b">Nivel de Contaminación</th>
                                         <th className="text-left p-2 border-b">Concentración μg/m³</th>
-                                        <th className="text-left p-2 border-b">Nivel de Polución</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr><td className="p-2 border-b">0 - 10</td><td className="p-2 border-b">Muy Bueno</td></tr>
-                                    <tr><td className="p-2 border-b">10 - 20</td><td className="p-2 border-b">Bueno</td></tr>
-                                    <tr><td className="p-2 border-b">20 - 50</td><td className="p-2 border-b">Moderado</td></tr>
-                                    <tr><td className="p-2 border-b">50 - 100</td><td className="p-2 border-b">Malo</td></tr>
-                                    <tr><td className="p-2 border-b">100 - 150</td><td className="p-2 border-b">Muy Malo</td></tr>
-                                    <tr><td className="p-2">&gt; 150</td><td className="p-2">Extremo</td></tr>
+                                    {POLLUTION_LEVELS.map((level, index) => (
+                                        <tr key={level.name}>
+                                            <td className={`p-2 ${index < POLLUTION_LEVELS.length - 1 ? 'border-b' : ''}`}>
+                                                <span className="inline-flex items-center gap-2">
+                                                    <span
+                                                        className="inline-block h-4 w-4 rounded border border-gray-800"
+                                                        style={{ backgroundColor: level.color }}
+                                                        aria-label={`Color ${level.name}`}
+                                                        title={level.name}
+                                                    />
+                                                    <span>{level.name}</span>
+                                                </span>
+                                            </td>
+                                            <td className={`p-2 ${index < POLLUTION_LEVELS.length - 1 ? 'border-b' : ''}`}>
+                                                {level.range}
+                                            </td>
+                                        </tr>
+                                    ))}
                                 </tbody>
                             </table>
+                        </div>
+
+                        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-center">
+                            <p className="text-base font-medium italic text-emerald-900">
+                                "Gracias por contribuir a entender mejor el aire que respiramos"
+                            </p>
                         </div>
 
                         <button

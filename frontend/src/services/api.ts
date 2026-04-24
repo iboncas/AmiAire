@@ -349,8 +349,8 @@ export async function submitExperiment(payload: {
     longitude: number;
     pm10Concentration: number;
     pm25Concentration: number;
-    pollutionLevelPM10: string;
-    pollutionLevelPM25: string;
+    concentration?: number;
+    pollutionLevel?: string;
     inputImageB64: string;
     analysisResults: {
         numContours: number;

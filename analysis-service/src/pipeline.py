@@ -223,16 +223,16 @@ def polution_level_inmemory(
 
 def classification_inmemory(concentration: float) -> str:
     if concentration <= 10:
-        return "Nivel de polución Muy bueno, menos de 10 μg/m³"
+        return "Nivel de contaminación Muy bueno, menos de 10 μg/m³"
     if concentration < 20:
-        return "Nivel de polución Bueno, entre 10 to 19 μg/m³"
+        return "Nivel de contaminación Bueno, entre 10 to 19 μg/m³"
     if concentration < 50:
-        return "Nivel de polución Moderado, entre 20 to 49 ug/m^3"
+        return "Nivel de contaminación Moderado, entre 20 to 49 ug/m^3"
     if concentration < 100:
-        return "Nivel de polución Malo, entre 50 to 99 μg/m³"
+        return "Nivel de contaminación Malo, entre 50 to 99 μg/m³"
     if concentration < 150:
-        return "Nivel de polución Muy Malo, entre 100 to 150 μg/m³"
-    return "Nivel de polución Extremo, mas de 150 μg/m³"
+        return "Nivel de contaminación Muy Malo, entre 100 to 150 μg/m³"
+    return "Nivel de contaminación Extremo, mas de 150 μg/m³"
 
 
 def process_roi(

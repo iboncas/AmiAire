@@ -43,6 +43,11 @@ export default function MapPage({ isActive }: MapPageProps) {
         loadSensors();
     }, []);
 
+    useEffect(() => {
+        if (!isActive) return;
+        void loadSensors();
+    }, [isActive]);
+
     const refreshOfficialSensors = async (startDate?: string, endDate?: string) => {
         const official = await fetchEstacionesOficiales(startDate, endDate);
         const normalizedOfficial = official.map((s) => ({ ...s, type: 'official' as const }));

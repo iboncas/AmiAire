@@ -3,3 +3,7 @@ minio
 python-dotenv
 tqdm
 geopandas
+numpy
+matplotlib
+scikit-learn
+hdbscan

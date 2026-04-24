@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Header from './components/Header';
 import ParticleAnalysisPage from './components/pages/ParticleAnalysisPage';
 import MapPage from './components/pages/MapPage';
@@ -6,29 +6,41 @@ import Footer from './components/Footer';
 import ErrorBoundary from './components/ErrorBoundary';
 
 type View = 'analysis' | 'map';
-const VIEW_STORAGE_KEY = 'amiaire.activeView';
+const ANALYSIS_PATH = '/';
+const MAP_PATH = '/map_contributions';
 
 function readInitialView(): View {
   if (typeof window === 'undefined') return 'analysis';
-  try {
-    const saved = window.sessionStorage.getItem(VIEW_STORAGE_KEY);
-    return saved === 'map' ? 'map' : 'analysis';
-  } catch {
-    return 'analysis';
-  }
+  return window.location.pathname === MAP_PATH ? 'map' : 'analysis';
+}
+
+function pathForView(view: View): string {
+  return view === 'map' ? MAP_PATH : ANALYSIS_PATH;
 }
 
 function App() {
   const [view, setView] = useState<View>(readInitialView);
 
   const handleNavigate = (nextView: View) => {
-    try {
-      window.sessionStorage.setItem(VIEW_STORAGE_KEY, nextView);
-    } catch {
-      // Ignore storage errors.
+    const nextPath = pathForView(nextView);
+
+    if (typeof window !== 'undefined' && window.location.pathname !== nextPath) {
+      window.history.pushState({}, '', nextPath);
     }
+
     setView(nextView);
   };
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setView(readInitialView());
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
 
   return (
     <ErrorBoundary>
