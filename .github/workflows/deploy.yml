@@ -47,3 +47,15 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: iboncas/amiaire-analysis-service:latest
+
+      - name: Deploy on Hetzner VM
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.HETZNER_HOST }}
+          username: ${{ secrets.HETZNER_USER }}
+          key: ${{ secrets.HETZNER_SSH_KEY }}
+          script: |
+            cd /opt/deploys
+            docker compose pull
+            docker compose up -d
+            docker image prune -f
