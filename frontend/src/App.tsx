@@ -13,6 +13,12 @@ interface NavigateOptions {
   scrollToTop?: boolean;
 }
 
+declare global {
+  interface Window {
+    gtag?: (...args: unknown[]) => void;
+  }
+}
+
 function readInitialView(): View {
   if (typeof window === 'undefined') return 'analysis';
   return window.location.pathname === MAP_PATH ? 'map' : 'analysis';
@@ -20,6 +26,18 @@ function readInitialView(): View {
 
 function pathForView(view: View): string {
   return view === 'map' ? MAP_PATH : ANALYSIS_PATH;
+}
+
+function trackPageView() {
+  if (typeof window === 'undefined' || typeof window.gtag !== 'function') {
+    return;
+  }
+
+  window.gtag('event', 'page_view', {
+    page_title: document.title,
+    page_location: window.location.href,
+    page_path: window.location.pathname,
+  });
 }
 
 function App() {
@@ -49,6 +67,10 @@ function App() {
       window.removeEventListener('popstate', handlePopState);
     };
   }, []);
+
+  useEffect(() => {
+    trackPageView();
+  }, [view]);
 
   return (
     <ErrorBoundary>
