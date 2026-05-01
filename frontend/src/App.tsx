@@ -9,6 +9,10 @@ type View = 'analysis' | 'map';
 const ANALYSIS_PATH = '/';
 const MAP_PATH = '/map_contributions';
 
+interface NavigateOptions {
+  scrollToTop?: boolean;
+}
+
 function readInitialView(): View {
   if (typeof window === 'undefined') return 'analysis';
   return window.location.pathname === MAP_PATH ? 'map' : 'analysis';
@@ -21,7 +25,7 @@ function pathForView(view: View): string {
 function App() {
   const [view, setView] = useState<View>(readInitialView);
 
-  const handleNavigate = (nextView: View) => {
+  const handleNavigate = (nextView: View, options: NavigateOptions = {}) => {
     const nextPath = pathForView(nextView);
 
     if (typeof window !== 'undefined' && window.location.pathname !== nextPath) {
@@ -29,6 +33,10 @@ function App() {
     }
 
     setView(nextView);
+
+    if (options.scrollToTop && typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    }
   };
 
   useEffect(() => {
@@ -55,7 +63,7 @@ function App() {
           }
           aria-hidden={view !== 'analysis'}
         >
-          <ParticleAnalysisPage onOpenMap={() => handleNavigate('map')} />
+          <ParticleAnalysisPage onOpenMap={() => handleNavigate('map', { scrollToTop: true })} />
         </div>
 
         <div
