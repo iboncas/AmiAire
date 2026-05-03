@@ -14,6 +14,13 @@ interface ParticleAnalysisPageProps {
 }
 
 type Step = 1 | 2 | 3 | 4 | 5;
+const STEP_TITLES: Record<Step, string> = {
+    1: 'Fechas',
+    2: 'Ubicación',
+    3: 'Imagen del sensor',
+    4: 'Confirmación del área',
+    5: 'Resultados',
+};
 
 function getPollutionLevelLabel(concentration: number): string {
     if (!Number.isFinite(concentration) || concentration < 0) {
@@ -211,7 +218,7 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
             if (error instanceof Error && error.message) {
                 setErrorMessage(error.message);
             } else {
-                setErrorMessage('No se ha detectado la región de interés o el análisis ha fallado.');
+                setErrorMessage('No se ha detectado correctamente el área del sensor o el análisis ha fallado.');
             }
         } finally {
             setIsProcessing(false);
@@ -260,7 +267,7 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
                     areaPercentage: Number(processed.analysisResults?.area_percentage || 0),
                 },
             });
-            setSuccessMessage('Experimento guardado en la base de datos.');
+            setSuccessMessage('Resultado guardado correctamente.');
             setStep(5);
         } catch (error) {
             console.error(error);
@@ -332,6 +339,36 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
                             5) Ver los resultados del análisis a nive de concentración de material
                             particulado en el aire y explorar los datos en un mapa
                         </p>
+                    </div>
+                </div>
+
+                <div className="mb-6 rounded-xl border border-gray-200 bg-gray-50 p-4">
+                    <div className="mb-3 flex items-center justify-between">
+                        <p className="text-sm font-medium text-gray-700">
+                            Progreso del registro: paso {step} de 5
+                        </p>
+                        <p className="text-sm font-semibold text-ami-azul">{STEP_TITLES[step]}</p>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-gray-200">
+                        <div
+                            className="h-full rounded-full bg-ami-azul transition-all"
+                            style={{ width: `${(step / 5) * 100}%` }}
+                        />
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-700 sm:grid-cols-5">
+                        {(Object.entries(STEP_TITLES) as Array<[string, string]>).map(([stepNumber, label]) => {
+                            const numericStep = Number(stepNumber);
+                            const isCurrent = numericStep === step;
+                            const isCompleted = numericStep < step;
+                            return (
+                                <p
+                                    key={stepNumber}
+                                    className={`${isCurrent ? 'font-semibold text-ami-azul' : ''} ${isCompleted ? 'text-emerald-700' : ''}`}
+                                >
+                                    {numericStep}. {label}
+                                </p>
+                            );
+                        })}
                     </div>
                 </div>
 
@@ -409,8 +446,16 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
                         {latitude !== null && longitude !== null && (
                             <>
                                 <p className="text-sm text-gray-600">
-                                    Arrastra el marcador para fijar la posición exacta.
+                                    Si el lugar buscado es aproximado, arrastra el marcador para fijar la posición exacta.
                                 </p>
+                                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700">
+                                    <p>
+                                        <strong>Lugar seleccionado:</strong> {locationName || 'Ubicación buscada'}
+                                    </p>
+                                    <p>
+                                        <strong>Coordenadas:</strong> {latitude.toFixed(6)}, {longitude.toFixed(6)}
+                                    </p>
+                                </div>
                                 <div ref={mapContainerRef} className="h-[400px] rounded border border-gray-200" />
                                 <button
                                     type="button"
@@ -436,6 +481,20 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
                         <p className="text-sm text-gray-700">
                             El análisis calcula automáticamente PM10 y PM2.5.
                         </p>
+                        <div className="rounded-lg border border-blue-100 bg-blue-50 p-3 text-sm text-blue-900">
+                            <p className="font-medium">Cómo debe verse la foto del sensor</p>
+                            <p>Sube una imagen donde se vea el sensor completo, con buena iluminación, pocos reflejos y la rejilla claramente visible.</p>
+                            <p className="mt-1">Formatos aceptados: JPG, JPEG, PNG y WEBP.</p>
+                        </div>
+                        <div className="max-w-sm rounded-lg border border-gray-200 bg-white p-3">
+                            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">Ejemplo orientativo</p>
+                            <img
+                                src="/sensor-ejemplo.png"
+                                alt="Ejemplo de foto válida del sensor"
+                                className="w-full rounded border border-gray-300 bg-white object-contain"
+                            />
+                            <p className="mt-2 text-xs text-gray-600">El sensor entra completo en el encuadre y la rejilla se distingue.</p>
+                        </div>
                         <input type="file" accept="image/*" onChange={handleImageChange} />
                         {isValidatingImage && (
                             <p className="text-sm text-gray-600">
@@ -467,9 +526,10 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
                             void handleSubmit();
                         }}
                     >
-                        <h2 className="font-semibold text-lg">Paso 4. Confirmación del área de interés (ROI)</h2>
+                        <h2 className="font-semibold text-lg">Paso 4. Confirmación del área detectada del sensor</h2>
                         <p className="text-sm text-gray-700">
-                            Revisa que el área detectada sea correcta. Si no lo es, vuelve a cargar otra imagen.
+                            Verifica que el recorte del sensor incluya toda la zona útil y que no falten bordes importantes.
+                            Si no es correcto, vuelve al paso anterior y sube otra imagen.
                         </p>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {processed.contourImageB64 && (
@@ -484,10 +544,10 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
                             )}
                             {processed.roiImageB64 && (
                                 <div>
-                                    <h3 className="font-medium mb-2">ROI extraído</h3>
+                                    <h3 className="font-medium mb-2">Área recortada del sensor</h3>
                                     <img
                                         src={`data:image/png;base64,${processed.roiImageB64}`}
-                                        alt="ROI"
+                                        alt="Área recortada del sensor"
                                         className="rounded border border-gray-200"
                                     />
                                 </div>
@@ -521,7 +581,7 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
 
                         <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
                             <p className="text-sm leading-6 text-gray-700">
-                                A partir de la imagen del sensor, el sistema detecta la región de interés,
+                                A partir de la imagen del sensor, el sistema detecta el área del sensor,
                                 extrae las partículas visibles, genera una máscara binaria para aislarlas y
                                 calcula métricas que permiten estimar los niveles de PM10 y PM2.5.
                             </p>
@@ -540,10 +600,10 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
                             )}
                             {processed.roiImageB64 && (
                                 <div>
-                                    <h3 className="font-medium mb-2">ROI extraído</h3>
+                                    <h3 className="font-medium mb-2">Área recortada del sensor</h3>
                                     <img
                                         src={`data:image/png;base64,${processed.roiImageB64}`}
-                                        alt="ROI"
+                                        alt="Área recortada del sensor"
                                         className="w-full h-64 object-contain rounded border border-gray-200 bg-white"
                                     />
                                 </div>
@@ -614,9 +674,12 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
                             </table>
                         </div>
 
-                        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-center">
-                            <p className="text-base font-medium italic text-emerald-900">
-                                "Gracias por contribuir a entender mejor el aire que respiramos"
+                        <div className="rounded-xl border-2 border-emerald-300 bg-emerald-50 px-4 py-4">
+                            <p className="text-lg font-semibold text-emerald-900">
+                                Resultado guardado con éxito.
+                            </p>
+                            <p className="mt-1 text-sm text-emerald-900">
+                                Puedes continuar viendo el mapa para comparar tu resultado con otros sensores.
                             </p>
                         </div>
 
