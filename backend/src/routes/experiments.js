@@ -99,6 +99,7 @@ router.post('/experimentos', async (req, res) => {
             pm25Concentration,
             inputImageB64,
             analysisResults,
+            taxonomyModel,
         } = req.body || {};
 
         if (!startDate || !endDate) {
@@ -139,6 +140,7 @@ router.post('/experimentos', async (req, res) => {
             'Porcentaje de área detectada': Number(analysisResults?.areaPercentage || 0),
             'PM10': pm10Value,
             'PM2.5': pm25Value,
+            'Posibles fuentes contaminantes': taxonomyModel || null,
             'Imagen de entrada': inputImageUrl,
         };
 

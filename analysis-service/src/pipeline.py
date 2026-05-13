@@ -12,8 +12,10 @@ from dataset_features import (
     build_particle_records,
     get_feature_set_catalog,
 )
+from roi_grid_classifier import classify_roi_grid
 from skimage import exposure, filters, measure
 from skimage.util import img_as_ubyte
+from taxonomy_model import score_feature_profile
 
 DEFAULT_REGRESSION_MODELS = {
     "PM10": {"slope": 5.912886205097057e-05, "intercept": 6.763489480198955},
@@ -241,6 +243,7 @@ def process_roi(
     image_metadata: dict = None,
     contextual_data: dict = None,
 ):
+    roi_grid_features = classify_roi_grid(roi_bgr)
     gray = convert_to_grayscale_8bit_inmemory(roi_bgr, STANDARDIZED_ROI_SIZE)
     bg_improved = improve_background_inmemory(gray, kernel_size=(21, 21), sigma=10.0)
     rescaled = rescale_intensity_inmemory(bg_improved, in_range_percent=(0, 20))
@@ -296,6 +299,7 @@ def process_roi(
         roi_shape=clahe_result.shape,
         roi_detected=True,
         analysis_success=True,
+        roi_grid_metadata=roi_grid_features,
     )
     particle_records = build_particle_records(
         analysis_results["filtered_regions"],
@@ -307,7 +311,13 @@ def process_roi(
         particle_records,
         clahe_result,
         contextual_data=contextual_data,
+        roi_grid_features=roi_grid_features,
     )
+    taxonomy_model = None
+    try:
+        taxonomy_model = score_feature_profile(image_features)
+    except Exception:
+        taxonomy_model = None
 
     return {
         "analysis_results": {
@@ -320,6 +330,7 @@ def process_roi(
         "classifications": classifications,
         "binary_mask_b64": binary_mask_b64,
         "overlay_b64": overlay_b64,
+        "taxonomy_model": taxonomy_model,
         "dataset_outputs": {
             "execution_scope": ["phase_1", "phase_2", "phase_3", "phase_4"],
             "images_metadata": resolved_image_metadata,

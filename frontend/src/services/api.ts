@@ -282,6 +282,27 @@ export interface ProcessedAnalysis {
         PM10?: string;
         PM25?: string;
     };
+    taxonomyModel?: {
+        status?: string;
+        top_category?: string;
+        top_category_label?: string;
+        feature_count?: number;
+        used_formula_features?: string[];
+        note?: string;
+        is_definitive_truth?: boolean;
+        ranked_categories?: Array<{
+            category: string;
+            label: string;
+            score: number;
+            percentage: number;
+            evidence?: Array<{
+                feature: string;
+                z: number;
+                weight: number;
+                contribution: number;
+            }>;
+        }>;
+    } | null;
     datasetOutputs?: {
         execution_scope?: string[];
         images_metadata?: Record<string, unknown>;
@@ -356,6 +377,7 @@ export async function submitExperiment(payload: {
         numContours: number;
         areaPercentage: number;
     };
+    taxonomyModel?: ProcessedAnalysis['taxonomyModel'];
 }): Promise<{ success: boolean; id?: string; imageUrl?: string }> {
     const response = await fetch('/api/experimentos', {
         method: 'POST',

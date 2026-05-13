@@ -156,6 +156,7 @@ def process_image_endpoint():
         'pollution_data': pipeline_results['pollution_data'],
         'pollution_level': pipeline_results['classification'],
         'pollution_levels': pipeline_results.get('classifications', {}),
+        'taxonomy_model': pipeline_results.get('taxonomy_model'),
         'binary_b64': pipeline_results['binary_mask_b64'],
         'overlay_b64': pipeline_results['overlay_b64'],
         'validation': validation,

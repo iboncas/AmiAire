@@ -25,6 +25,25 @@ IMAGE_METADATA_FIELDS = [
     "official_station_id",
 ]
 
+ROI_GRID_METADATA_FIELDS = [
+    "roi_grid_label",
+    "roi_grid_score",
+    "roi_grid_confidence",
+    "roi_grid_needs_review",
+]
+
+ROI_GRID_FEATURE_FIELDS = [
+    "roi_grid_inner_margin_ratio",
+    "roi_grid_inner_dark_ratio",
+    "roi_grid_horizontal_line_count",
+    "roi_grid_vertical_line_count",
+    "roi_grid_horizontal_coverage",
+    "roi_grid_vertical_coverage",
+    "roi_grid_row_peak_count",
+    "roi_grid_col_peak_count",
+    "roi_grid_spacing_regularity",
+]
+
 SUMMARY_FAMILY_MAP = {
     "area_px": "area",
     "solidity": "solidity",
@@ -125,6 +144,7 @@ def build_image_metadata_record(
     analysis_success=False,
     segmentation_success=None,
     failure_reason=None,
+    roi_grid_metadata=None,
 ):
     metadata = metadata or {}
     roi_height = int(roi_shape[0]) if roi_shape else None
@@ -146,6 +166,13 @@ def build_image_metadata_record(
 
     if not record.get("manual_qc_flag"):
         record["manual_qc_flag"] = "pending"
+
+    for field in ROI_GRID_METADATA_FIELDS:
+        record[field] = None
+    if roi_grid_metadata:
+        for field in ROI_GRID_METADATA_FIELDS:
+            if field in roi_grid_metadata:
+                record[field] = roi_grid_metadata.get(field)
 
     return record
 
@@ -256,14 +283,24 @@ def build_empty_image_feature_record(image_metadata, contextual_data=None):
         for suffix in SUMMARY_SUFFIXES:
             record[f"{feature_prefix}_{suffix}"] = None
 
+    for field in ROI_GRID_FEATURE_FIELDS:
+        record[field] = None
+
     for key, value in contextual_data.items():
         record[key] = _scalarize_context_value(value)
 
     return record
 
 
-def build_image_feature_record(image_metadata, particle_records, standardized_gray, contextual_data=None):
+def build_image_feature_record(
+    image_metadata,
+    particle_records,
+    standardized_gray,
+    contextual_data=None,
+    roi_grid_features=None,
+):
     contextual_data = contextual_data or {}
+    roi_grid_features = roi_grid_features or {}
     roi_height, roi_width = standardized_gray.shape[:2]
     roi_area_px = roi_height * roi_width
     total_particle_area = float(sum(record["area_px"] for record in particle_records))
@@ -299,6 +336,9 @@ def build_image_feature_record(image_metadata, particle_records, standardized_gr
 
     for key, value in contextual_data.items():
         feature_record[key] = _scalarize_context_value(value)
+
+    for field in ROI_GRID_FEATURE_FIELDS:
+        feature_record[field] = roi_grid_features.get(field)
 
     return feature_record
 

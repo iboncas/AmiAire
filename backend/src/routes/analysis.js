@@ -102,6 +102,7 @@ router.post('/analysis/process', async (req, res) => {
                 pollutionData: data.pollution_data || {},
                 pollutionLevel: data.pollution_level || '',
                 pollutionLevels: data.pollution_levels || {},
+                taxonomyModel: data.taxonomy_model || null,
                 datasetOutputs: data.dataset_outputs || null,
             },
         });

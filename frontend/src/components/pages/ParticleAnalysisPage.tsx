@@ -266,6 +266,7 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
                     numContours: Number(processed.analysisResults?.num_contours || 0),
                     areaPercentage: Number(processed.analysisResults?.area_percentage || 0),
                 },
+                taxonomyModel: processed.taxonomyModel,
             });
             setSuccessMessage('Resultado guardado correctamente.');
             setStep(5);
@@ -296,6 +297,11 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
     const areaPercentageRoundedUp = (
         Math.ceil(Number(processed?.analysisResults?.area_percentage || 0) * 1000) / 1000
     ).toFixed(3);
+    const taxonomyRanking = processed?.taxonomyModel?.ranked_categories ?? [];
+    const taxonomyTopCategory = processed?.taxonomyModel?.top_category_label ?? '';
+    const taxonomyNote =
+        processed?.taxonomyModel?.note ??
+        'Este modelo probabilístico ofrece una estimación orientativa basada en compatibilidad con categorías posibles.';
 
     return (
         <div className="container mx-auto px-4 py-6">
@@ -585,6 +591,10 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
                                 extrae las partículas visibles, genera una máscara binaria para aislarlas y
                                 calcula métricas que permiten estimar los niveles de PM10 y PM2.5.
                             </p>
+                            <p className="mt-2 text-sm font-medium leading-6 text-amber-800">
+                                Todas las estimaciones mostradas aqui, incluido el modelo probabilístico
+                                de posibles fuentes contaminantes, no son una verdad definitiva.
+                            </p>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -690,6 +700,53 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
                         >
                             Ver mapa de AmiAire
                         </button>
+
+                        {taxonomyRanking.length > 0 && (
+                            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                                <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-amber-950">
+                                            Posibles fuentes contaminantes
+                                        </h3>
+                                        <p className="mt-1 text-sm leading-6 text-amber-900">
+                                            La categoria con mayor compatibilidad en esta imagen es{' '}
+                                            <strong>{taxonomyTopCategory}</strong>.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <p className="mt-3 text-sm leading-6 text-amber-900">
+                                    {taxonomyNote}
+                                </p>
+
+                                <div className="mt-4 space-y-3">
+                                    {taxonomyRanking.map((item) => (
+                                        <div key={item.category} className="rounded-lg border border-amber-100 bg-white p-3">
+                                            <div className="flex items-center justify-between gap-4">
+                                                <p className="text-sm font-medium text-slate-900">
+                                                    {item.label}
+                                                </p>
+                                                <p className="text-sm font-semibold text-amber-900">
+                                                    {item.percentage.toFixed(1)}%
+                                                </p>
+                                            </div>
+                                            <div className="mt-2 h-2 overflow-hidden rounded-full bg-amber-100">
+                                                <div
+                                                    className="h-full rounded-full bg-amber-500"
+                                                    style={{ width: `${Math.max(2, Math.min(100, item.percentage))}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <p className="mt-4 text-xs leading-5 text-amber-800">
+                                    Este reparto porcentual expresa compatibilidad relativa entre categorias
+                                    posibles. No identifica con certeza el contaminante real ni sustituye
+                                    una validación experta o química.
+                                </p>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
