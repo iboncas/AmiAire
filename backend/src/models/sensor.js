@@ -79,6 +79,7 @@ function mapSensorToFrontend(doc) {
         fechaInicio: doc['Fecha de inicio'],
         fechaRecogida: doc['Fecha de recogida'],
         imagen: doc['Imagen de entrada'],
+        taxonomyModel: doc['Posibles fuentes contaminantes'] ?? null,
     };
 }
 

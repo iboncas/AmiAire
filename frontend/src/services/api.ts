@@ -6,7 +6,7 @@ import type {
 } from '../types/sensor';
 
 const API_URL =
-    '/api/sensores?fields=id,nombre,ubicacion,nivelPolucion,metricas.concentracion,metricas.pm25,metricas.pm10,fechaInicio,fechaRecogida';
+    '/api/sensores?fields=id,nombre,ubicacion,nivelPolucion,metricas.concentracion,metricas.pm25,metricas.pm10,fechaInicio,fechaRecogida,taxonomyModel';
 
 type ApiEnvelope<T> = {
     success?: boolean;
@@ -153,6 +153,26 @@ export async function fetchSensores(): Promise<Sensor[]> {
     } catch (error) {
         console.error('Error fetching sensors:', error);
         return [];
+    }
+}
+
+export async function fetchSensorById(id: string): Promise<Sensor | null> {
+    try {
+        const response = await fetch(`/api/sensores/${encodeURIComponent(id)}`);
+        if (!response.ok) {
+            console.error(`Error fetching sensor ${id}: ${response.status}`);
+            return null;
+        }
+
+        const data = (await response.json()) as {
+            success?: boolean;
+            data?: Sensor | null;
+        };
+
+        return data?.data ?? null;
+    } catch (error) {
+        console.error(`Error fetching sensor ${id}:`, error);
+        return null;
     }
 }
 

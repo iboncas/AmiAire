@@ -17,6 +17,16 @@ export interface Sensor {
     type?: 'diy' | 'official';
     hasPM10?: boolean;
     hasPM25?: boolean;
+    taxonomyModel?: {
+        top_category?: string;
+        top_category_label?: string;
+        note?: string;
+        ranked_categories?: Array<{
+            category: string;
+            label: string;
+            percentage: number;
+        }>;
+    } | null;
 }
 
 export interface FilterOptions {

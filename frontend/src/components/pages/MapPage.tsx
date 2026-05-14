@@ -5,18 +5,39 @@ import Legend from '../Legend';
 import SensorDetails from '../SensorDetails';
 import LoadingSpinner from '../LoadingSpinner';
 import type { Sensor } from '../../types/sensor';
-import { fetchSensores, fetchEstacionesOficiales, geocode } from '../../services/api';
+import {
+    fetchSensores,
+    fetchEstacionesOficiales,
+    fetchSensorById,
+    geocode,
+} from '../../services/api';
 import { haversineKm } from '../../utils/sensorUtils';
 
 interface MapPageProps {
     isActive: boolean;
 }
 
+const TAXONOMY_CATEGORY_DESCRIPTIONS: Record<string, string> = {
+    combustion_related:
+        'Suele agrupar partículas pequeñas y compactas, compatibles con procesos de combustión. Puede relacionarse con tráfico, humo u otras emisiones por quema.',
+    mechanical_non_combustion_particulate:
+        'Hace referencia a partículas generadas por desgaste o fricción, no por combustión. Puede incluir polvo mineral, abrasión de materiales o resuspensión mecánica.',
+    biological:
+        'Incluye formas compatibles con material de origen biológico. Puede estar asociado a polen, restos vegetales, esporas u otras partículas naturales.',
+    fibrous_synthetic_materials:
+        'Describe partículas alargadas o fibrosas, compatibles con fibras sintéticas. Puede relacionarse con textiles, plásticos u otros materiales manufacturados.',
+    industrial:
+        'Agrupa partículas con patrones compatibles con procesos industriales. Puede reflejar mezclas complejas asociadas a manufactura, manipulación o emisiones técnicas.',
+    mixed_unknown:
+        'Indica una mezcla poco definida de rasgos morfológicos. Se usa cuando no hay una afinidad clara con una sola categoría interpretativa.',
+};
+
 export default function MapPage({ isActive }: MapPageProps) {
     const [allSensors, setAllSensors] = useState<Sensor[]>([]);
     const [filteredSensors, setFilteredSensors] = useState<Sensor[]>([]);
     const [selectedSensor, setSelectedSensor] = useState<Sensor | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [isLoadingSelectedSensor, setIsLoadingSelectedSensor] = useState(false);
     const [mapCenter, setMapCenter] = useState<[number, number]>([40.4168, -3.7038]);
     const [mapZoom, setMapZoom] = useState(5);
     const [radiusCircle, setRadiusCircle] = useState<{
@@ -217,9 +238,26 @@ export default function MapPage({ isActive }: MapPageProps) {
         });
     };
 
-    const handleSensorClick = (sensor: Sensor) => {
+    const handleSensorClick = async (sensor: Sensor) => {
         setSelectedSensor(sensor);
+
+        if (sensor.type !== 'diy') {
+            return;
+        }
+
+        setIsLoadingSelectedSensor(true);
+        try {
+            const fullSensor = await fetchSensorById(sensor.id);
+            if (fullSensor) {
+                setSelectedSensor({ ...fullSensor, type: 'diy' });
+            }
+        } finally {
+            setIsLoadingSelectedSensor(false);
+        }
     };
+
+    const selectedTaxonomyRanking = selectedSensor?.taxonomyModel?.ranked_categories ?? [];
+    const selectedTaxonomyTopCategory = selectedSensor?.taxonomyModel?.top_category_label ?? '';
 
     return (
         <div className="container mx-auto px-4 mt-4">
@@ -257,16 +295,84 @@ export default function MapPage({ isActive }: MapPageProps) {
                     <Legend />
                     <SensorDetails sensor={selectedSensor} />
                     {selectedSensor?.type === 'diy' && (
-                        <div className="bg-white rounded-lg shadow-md overflow-hidden mt-4">
+                        <div className="bg-white rounded-lg shadow-md overflow-visible mt-4">
                             <div className="bg-ami-azul-claro text-white px-4 py-3">
                                 <h5 className="text-lg font-semibold m-0">Imagen del Sensor</h5>
                             </div>
                             <div className="p-4">
-                                <img
-                                    src={`/api/imagen?id=${encodeURIComponent(selectedSensor.id)}`}
-                                    alt={`Sensor ${selectedSensor.id}`}
-                                    className="max-w-full max-h-[300px] rounded-lg"
-                                />
+                                {isLoadingSelectedSensor ? (
+                                    <p className="text-sm text-gray-600">
+                                        Cargando imagen y posibles fuentes contaminantes...
+                                    </p>
+                                ) : (
+                                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+                                        <div className="shrink-0 lg:w-[42%]">
+                                            <img
+                                                src={`/api/imagen?id=${encodeURIComponent(selectedSensor.id)}`}
+                                                alt={`Sensor ${selectedSensor.id}`}
+                                                className="max-w-full max-h-[300px] rounded-lg"
+                                            />
+                                        </div>
+
+                                        <div className="min-w-0 flex-1 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                                            <h6 className="text-sm font-semibold text-amber-950">
+                                                Posibles fuentes contaminantes
+                                            </h6>
+                                            {selectedTaxonomyRanking.length > 0 ? (
+                                                <>
+                                                    {selectedTaxonomyTopCategory && (
+                                                        <p className="mt-1 text-xs leading-5 text-amber-900">
+                                                            Categoría más compatible:{' '}
+                                                            <strong>{selectedTaxonomyTopCategory}</strong>.
+                                                        </p>
+                                                    )}
+                                                    <div className="mt-3 space-y-3">
+                                                        {selectedTaxonomyRanking.map((item) => (
+                                                            <div key={item.category} className="rounded-lg border border-amber-100 bg-white p-3">
+                                                                <div className="flex items-center justify-between gap-3">
+                                                                    <div className="relative group max-w-[80%]">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <p className="text-sm font-medium text-slate-900">
+                                                                                {item.label}
+                                                                            </p>
+                                                                            {TAXONOMY_CATEGORY_DESCRIPTIONS[item.category] && (
+                                                                                <span
+                                                                                    className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-amber-300 bg-amber-50 text-[11px] font-semibold text-amber-900 cursor-help"
+                                                                                    aria-label={`Información sobre ${item.label}`}
+                                                                                    title={TAXONOMY_CATEGORY_DESCRIPTIONS[item.category]}
+                                                                                >
+                                                                                    i
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        {TAXONOMY_CATEGORY_DESCRIPTIONS[item.category] && (
+                                                                            <div className="pointer-events-none absolute left-0 top-full z-30 mt-2 hidden w-72 rounded-lg border border-amber-200 bg-white p-3 text-xs leading-5 text-slate-700 shadow-lg group-hover:block">
+                                                                                {TAXONOMY_CATEGORY_DESCRIPTIONS[item.category]}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                    <p className="text-sm font-semibold text-amber-900">
+                                                                        {item.percentage.toFixed(1)}%
+                                                                    </p>
+                                                                </div>
+                                                                <div className="mt-2 h-2 overflow-hidden rounded-full bg-amber-100">
+                                                                    <div
+                                                                        className="h-full rounded-full bg-amber-500"
+                                                                        style={{ width: `${Math.max(2, Math.min(100, item.percentage))}%` }}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <p className="mt-1 text-xs leading-5 text-amber-900">
+                                                    No hay posibles fuentes contaminantes disponibles para este sensor.
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}

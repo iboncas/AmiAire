@@ -22,6 +22,21 @@ const STEP_TITLES: Record<Step, string> = {
     5: 'Resultados',
 };
 
+const TAXONOMY_CATEGORY_DESCRIPTIONS: Record<string, string> = {
+    combustion_related:
+        'Suele agrupar partículas pequeñas y compactas, compatibles con procesos de combustión. Puede relacionarse con tráfico, humo u otras emisiones por quema.',
+    mechanical_non_combustion_particulate:
+        'Hace referencia a partículas generadas por desgaste o fricción, no por combustión. Puede incluir polvo mineral, abrasión de materiales o resuspensión mecánica.',
+    biological:
+        'Incluye formas compatibles con material de origen biológico. Puede estar asociado a polen, restos vegetales, esporas u otras partículas naturales.',
+    fibrous_synthetic_materials:
+        'Describe partículas alargadas o fibrosas, compatibles con fibras sintéticas. Puede relacionarse con textiles, plásticos u otros materiales manufacturados.',
+    industrial:
+        'Agrupa partículas con patrones compatibles con procesos industriales. Puede reflejar mezclas complejas asociadas a manufactura, manipulación o emisiones técnicas.',
+    mixed_unknown:
+        'Indica una mezcla poco definida de rasgos morfológicos. Se usa cuando no hay una afinidad clara con una sola categoría interpretativa.',
+};
+
 function getPollutionLevelLabel(concentration: number): string {
     if (!Number.isFinite(concentration) || concentration < 0) {
         return 'Sin clasificar';
@@ -46,6 +61,7 @@ function getPollutionLevelLabel(concentration: number): string {
 
 export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPageProps) {
     const [step, setStep] = useState<Step>(1);
+    const [stepFiveView, setStepFiveView] = useState<'results' | 'sources'>('results');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [locationName, setLocationName] = useState('');
@@ -153,6 +169,7 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
         setImagePreview('');
         setImageBase64('');
         setProcessed(null);
+        setStepFiveView('results');
     };
 
     const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -212,6 +229,7 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
         try {
             const results = await processAnalysisImage(imageBase64);
             setProcessed(results);
+            setStepFiveView('results');
             setStep(4);
         } catch (error) {
             console.error(error);
@@ -269,6 +287,7 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
                 taxonomyModel: processed.taxonomyModel,
             });
             setSuccessMessage('Resultado guardado correctamente.');
+            setStepFiveView('results');
             setStep(5);
         } catch (error) {
             console.error(error);
@@ -292,8 +311,6 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
         processed?.pollutionData?.concentration_standard_pm25 ??
         0
     );
-    const pollutionLevelPM10 = getPollutionLevelLabel(pm10Concentration);
-    const pollutionLevelPM25 = getPollutionLevelLabel(pm25Concentration);
     const areaPercentageRoundedUp = (
         Math.ceil(Number(processed?.analysisResults?.area_percentage || 0) * 1000) / 1000
     ).toFixed(3);
@@ -308,7 +325,7 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
             {showInvalidSensorModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4">
                     <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-                        <h2 className="text-xl font-bold text-ami-azul">Imagen no valida</h2>
+                        <h2 className="text-xl font-bold text-ami-azul">Imagen no válida</h2>
                         <p className="mt-3 text-sm leading-6 text-gray-700">
                             La imagen subida no parece corresponder a un sensor. Por favor, selecciona una foto real del sensor para continuar.
                         </p>
@@ -331,7 +348,7 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
                         Herramienta Digital De Contaminación - Análisis De La Calidad Del Aire
                     </h1>
                     <p className="text-sm text-gray-700">
-                        Bienvenid@ a la web de análisis de datos del proyecto AmIAire
+                        Bienvenido a la web de análisis de datos del proyecto AmIAire
                     </p>
                     <p className="text-sm text-gray-700">
                         En esta sencilla web de cinco pasos podrás:
@@ -342,7 +359,7 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
                         <p>3) Subir la foto de tu sensor de vaselina</p>
                         <p>4) Validar si detectamos bien la zona del sensor a analizar</p>
                         <p>
-                            5) Ver los resultados del análisis a nive de concentración de material
+                            5) Ver los resultados del análisis a nivel de concentración de material
                             particulado en el aire y explorar los datos en un mapa
                         </p>
                     </div>
@@ -488,18 +505,21 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
                             El análisis calcula automáticamente PM10 y PM2.5.
                         </p>
                         <div className="rounded-lg border border-blue-100 bg-blue-50 p-3 text-sm text-blue-900">
-                            <p className="font-medium">Cómo debe verse la foto del sensor</p>
-                            <p>Sube una imagen donde se vea el sensor completo, con buena iluminación, pocos reflejos y la rejilla claramente visible.</p>
-                            <p className="mt-1">Formatos aceptados: JPG, JPEG, PNG y WEBP.</p>
-                        </div>
-                        <div className="max-w-sm rounded-lg border border-gray-200 bg-white p-3">
-                            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">Ejemplo orientativo</p>
-                            <img
-                                src="/sensor-ejemplo.png"
-                                alt="Ejemplo de foto válida del sensor"
-                                className="w-full rounded border border-gray-300 bg-white object-contain"
-                            />
-                            <p className="mt-2 text-xs text-gray-600">El sensor entra completo en el encuadre y la rejilla se distingue.</p>
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                <div className="min-w-0 flex-1">
+                                    <p className="font-medium">Cómo debe verse la foto del sensor</p>
+                                    <p>Sube una imagen donde se vea el sensor completo, con buena iluminación, pocos reflejos y el módulo del sensor bien definido.</p>
+                                    <p className="mt-2 text-xs text-blue-800">Ejemplo orientativo: el sensor entra completo en el encuadre y el módulo se distingue bien.</p>
+                                    <p className="mt-1">Formatos aceptados: JPG, JPEG, PNG y WEBP.</p>
+                                </div>
+                                <div className="shrink-0 self-start rounded-lg border border-blue-200 bg-white/80 p-2">
+                                    <img
+                                        src="/sensor-ejemplo.png"
+                                        alt="Ejemplo de foto válida del sensor"
+                                        className="h-28 w-28 rounded border border-gray-300 bg-white object-contain"
+                                    />
+                                </div>
+                            </div>
                         </div>
                         <input type="file" accept="image/*" onChange={handleImageChange} />
                         {isValidatingImage && (
@@ -581,7 +601,7 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
                     </form>
                 )}
 
-                {step === 5 && processed && (
+                {step === 5 && processed && stepFiveView === 'results' && (
                     <div className="space-y-4">
                         <h2 className="font-semibold text-lg">Resultados del análisis</h2>
 
@@ -592,8 +612,9 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
                                 calcula métricas que permiten estimar los niveles de PM10 y PM2.5.
                             </p>
                             <p className="mt-2 text-sm font-medium leading-6 text-amber-800">
-                                Todas las estimaciones mostradas aqui, incluido el modelo probabilístico
-                                de posibles fuentes contaminantes, no son una verdad definitiva.
+                                Todas las estimaciones mostradas aquí, incluido el modelo probabilístico
+                                de posibles fuentes contaminantes, son aproximaciones orientativas y no
+                                están exentas de error.
                             </p>
                         </div>
 
@@ -642,9 +663,7 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
 
                         <div className="bg-gray-50 rounded p-4 border border-gray-200 text-sm">
                             <p><strong>Concentración PM10:</strong> {pm10Concentration.toFixed(2)} μg/m³</p>
-                            <p><strong>Nivel de contaminación PM10:</strong> {pollutionLevelPM10}</p>
                             <p><strong>Concentración PM2.5:</strong> {pm25Concentration.toFixed(2)} μg/m³</p>
-                            <p><strong>Nivel de contaminación PM2.5:</strong> {pollutionLevelPM25}</p>
                             <p>
                                 <strong>Número de contornos detectados </strong>
                                 <strong>(en verde en la última imagen)</strong>
@@ -689,64 +708,113 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
                                 Resultado guardado con éxito.
                             </p>
                             <p className="mt-1 text-sm text-emerald-900">
-                                Puedes continuar viendo el mapa para comparar tu resultado con otros sensores.
+                                Puedes seguir con la interpretación del análisis revisando las posibles fuentes contaminantes.
                             </p>
                         </div>
 
-                        <button
-                            type="button"
-                            onClick={onOpenMap}
-                            className="px-4 py-2 rounded bg-ami-azul text-white"
-                        >
-                            Ver mapa de AmiAire
-                        </button>
-
-                        {taxonomyRanking.length > 0 && (
-                            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-                                <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-                                    <div>
-                                        <h3 className="text-lg font-semibold text-amber-950">
-                                            Posibles fuentes contaminantes
-                                        </h3>
-                                        <p className="mt-1 text-sm leading-6 text-amber-900">
-                                            La categoria con mayor compatibilidad en esta imagen es{' '}
-                                            <strong>{taxonomyTopCategory}</strong>.
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <p className="mt-3 text-sm leading-6 text-amber-900">
-                                    {taxonomyNote}
-                                </p>
-
-                                <div className="mt-4 space-y-3">
-                                    {taxonomyRanking.map((item) => (
-                                        <div key={item.category} className="rounded-lg border border-amber-100 bg-white p-3">
-                                            <div className="flex items-center justify-between gap-4">
-                                                <p className="text-sm font-medium text-slate-900">
-                                                    {item.label}
-                                                </p>
-                                                <p className="text-sm font-semibold text-amber-900">
-                                                    {item.percentage.toFixed(1)}%
-                                                </p>
-                                            </div>
-                                            <div className="mt-2 h-2 overflow-hidden rounded-full bg-amber-100">
-                                                <div
-                                                    className="h-full rounded-full bg-amber-500"
-                                                    style={{ width: `${Math.max(2, Math.min(100, item.percentage))}%` }}
-                                                />
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <p className="mt-4 text-xs leading-5 text-amber-800">
-                                    Este reparto porcentual expresa compatibilidad relativa entre categorias
-                                    posibles. No identifica con certeza el contaminante real ni sustituye
-                                    una validación experta o química.
-                                </p>
-                            </div>
+                        {taxonomyRanking.length > 0 ? (
+                            <button
+                                type="button"
+                                onClick={() => setStepFiveView('sources')}
+                                className="px-4 py-2 rounded bg-ami-azul text-white"
+                            >
+                                Ver posibles fuentes contaminantes
+                            </button>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={onOpenMap}
+                                className="px-4 py-2 rounded bg-ami-azul text-white"
+                            >
+                                Ver mapa de AmiAire
+                            </button>
                         )}
+                    </div>
+                )}
+
+                {step === 5 && processed && stepFiveView === 'sources' && taxonomyRanking.length > 0 && (
+                    <div className="space-y-4">
+                        <h2 className="font-semibold text-lg">Posibles fuentes contaminantes</h2>
+
+                        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                            <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                                <div>
+                                    <h3 className="text-lg font-semibold text-amber-950">
+                                        Compatibilidad estimada por categorías
+                                    </h3>
+                                    <p className="mt-1 text-sm leading-6 text-amber-900">
+                                        La categoría con mayor compatibilidad en esta imagen es{' '}
+                                        <strong>{taxonomyTopCategory}</strong>.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <p className="mt-3 text-sm leading-6 text-amber-900">
+                                {taxonomyNote}
+                            </p>
+
+                            <div className="mt-4 space-y-3">
+                                {taxonomyRanking.map((item) => (
+                                    <div key={item.category} className="rounded-lg border border-amber-100 bg-white p-3">
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div className="relative group max-w-[80%]">
+                                                <div className="flex items-center gap-2">
+                                                    <p className="text-sm font-medium text-slate-900">
+                                                        {item.label}
+                                                    </p>
+                                                    {TAXONOMY_CATEGORY_DESCRIPTIONS[item.category] && (
+                                                        <span
+                                                            className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-amber-300 bg-amber-50 text-[11px] font-semibold text-amber-900 cursor-help"
+                                                            aria-label={`Información sobre ${item.label}`}
+                                                            title={TAXONOMY_CATEGORY_DESCRIPTIONS[item.category]}
+                                                        >
+                                                            i
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                {TAXONOMY_CATEGORY_DESCRIPTIONS[item.category] && (
+                                                    <div className="pointer-events-none absolute left-0 top-full z-10 mt-2 hidden w-72 rounded-lg border border-amber-200 bg-white p-3 text-xs leading-5 text-slate-700 shadow-lg group-hover:block">
+                                                        {TAXONOMY_CATEGORY_DESCRIPTIONS[item.category]}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <p className="text-sm font-semibold text-amber-900">
+                                                {item.percentage.toFixed(1)}%
+                                            </p>
+                                        </div>
+                                        <div className="mt-2 h-2 overflow-hidden rounded-full bg-amber-100">
+                                            <div
+                                                className="h-full rounded-full bg-amber-500"
+                                                style={{ width: `${Math.max(2, Math.min(100, item.percentage))}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <p className="mt-4 text-xs leading-5 text-amber-800">
+                                Este reparto porcentual expresa compatibilidad relativa entre categorías
+                                posibles. No identifica con certeza el contaminante real ni sustituye
+                                una validación experta o química.
+                            </p>
+                        </div>
+
+                        <div className="flex flex-wrap gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setStepFiveView('results')}
+                                className="px-4 py-2 rounded border border-gray-300"
+                            >
+                                Volver a resultados
+                            </button>
+                            <button
+                                type="button"
+                                onClick={onOpenMap}
+                                className="px-4 py-2 rounded bg-ami-azul text-white"
+                            >
+                                Ver mapa de AmiAire
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>

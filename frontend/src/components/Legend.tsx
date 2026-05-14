@@ -4,7 +4,7 @@ export default function Legend() {
     return (
         <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4">
             <div className="bg-ami-azul text-white px-4 py-3">
-                <h5 className="text-lg font-semibold m-0">Niveles de Polución</h5>
+                <h5 className="text-lg font-semibold m-0">Niveles de Contaminación</h5>
             </div>
             <div className="p-4">
                 <div className="mb-4 text-sm text-gray-700">
