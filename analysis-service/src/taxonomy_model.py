@@ -4,6 +4,7 @@ import csv
 import math
 from functools import lru_cache
 from pathlib import Path
+from statistics import median
 from typing import Any
 
 
@@ -228,6 +229,15 @@ def resolve_reference_dataset_path() -> Path | None:
     return None
 
 
+def resolve_sensor_dataset_path() -> Path | None:
+    current = Path(__file__).resolve()
+    for parent in current.parents:
+        candidate = parent / "iteration2" / "output" / "dataset" / "image_features_final.csv"
+        if candidate.exists():
+            return candidate
+    return None
+
+
 def parse_float(value: Any) -> float | None:
     if value in (None, ""):
         return None
@@ -330,6 +340,98 @@ def softmax_percentages(
     return {category: value * 100.0 / total for category, value in exp_scores.items()}
 
 
+def aggregate_sensor_rows(
+    rows: list[dict[str, str]],
+    feature_columns: list[str],
+) -> dict[str, float]:
+    profile: dict[str, float] = {}
+    for column in feature_columns:
+        values = [parse_float(row.get(column)) for row in rows]
+        clean_values = [value for value in values if value is not None]
+        if clean_values:
+            profile[column] = float(median(clean_values))
+    return profile
+
+
+def summarize_metadata(rows: list[dict[str, str]]) -> dict[str, Any]:
+    first = rows[0]
+    return {
+        "sensor_id": first.get("sensor_id", ""),
+        "image_id": first.get("image_id", ""),
+        "capture_datetime": first.get("capture_datetime", ""),
+        "official_station_id": first.get("official_station_id", ""),
+        "official_station_name": first.get("official_station_name", ""),
+        "record_pm10": first.get("record_pm10", ""),
+        "record_pm25": first.get("record_pm25", ""),
+        "official_pm10": first.get("official_pm10", ""),
+        "official_pm25": first.get("official_pm25", ""),
+    }
+
+
+class TaxonomyScorer:
+    def __init__(self, dataset_path: Path | None = None) -> None:
+        resolved_path = dataset_path or resolve_sensor_dataset_path()
+        if resolved_path is None or not resolved_path.exists():
+            raise FileNotFoundError("Could not resolve sensor taxonomy dataset.")
+
+        self.dataset_path = resolved_path
+        self.rows, self.headers = load_rows(resolved_path)
+        self.feature_columns = numeric_feature_columns(self.rows, self.headers)
+        self.means, self.stds = compute_stats(self.rows, self.feature_columns)
+        self.sensor_ids = sorted({row["sensor_id"] for row in self.rows if row.get("sensor_id")})
+
+    def find_sensor_rows(self, sensor_query: str) -> list[dict[str, str]]:
+        query = sensor_query.strip()
+        if not query:
+            return []
+        exact_rows = [row for row in self.rows if row.get("sensor_id") == query]
+        if exact_rows:
+            return exact_rows
+        return [row for row in self.rows if query.lower() in row.get("sensor_id", "").lower()]
+
+    def score_sensor(self, sensor_query: str) -> dict[str, Any]:
+        matches = self.find_sensor_rows(sensor_query)
+        if not matches:
+            return {
+                "status": "not_found",
+                "query": sensor_query,
+                "message": "No sensor_id matched the query.",
+                "note": MODEL_NOTE,
+            }
+
+        profile = aggregate_sensor_rows(matches, self.feature_columns)
+        standardized_profile = standardize_profile(profile, self.means, self.stds)
+        raw_scores = score_profile(standardized_profile)
+        percentages = softmax_percentages(raw_scores)
+        ranked = sorted(
+            (
+                {
+                    "category": category,
+                    "label": CATEGORY_LABELS.get(category, category),
+                    "score": raw_scores[category]["score"],
+                    "percentage": percentages[category],
+                    "evidence": raw_scores[category]["contributions"][:4],
+                }
+                for category in raw_scores
+            ),
+            key=lambda item: item["percentage"],
+            reverse=True,
+        )
+
+        return {
+            "status": "ok",
+            "query": sensor_query,
+            "matched_rows": len(matches),
+            "matched_sensor_ids": sorted({row.get("sensor_id", "") for row in matches})[:20],
+            "top_category": ranked[0]["category"] if ranked else "",
+            "top_category_label": ranked[0]["label"] if ranked else "",
+            "ranked_categories": ranked,
+            "metadata": summarize_metadata(matches),
+            "note": MODEL_NOTE,
+            "is_definitive_truth": False,
+        }
+
+
 class FeatureProfileScorer:
     def __init__(self, reference_dataset_path: Path | None = None) -> None:
         resolved_path = reference_dataset_path or resolve_reference_dataset_path()
@@ -411,3 +513,12 @@ def get_default_feature_profile_scorer() -> FeatureProfileScorer:
 
 def score_feature_profile(profile: dict[str, Any]) -> dict[str, Any]:
     return get_default_feature_profile_scorer().score_profile(profile)
+
+
+@lru_cache(maxsize=1)
+def get_default_taxonomy_scorer() -> TaxonomyScorer:
+    return TaxonomyScorer()
+
+
+def score_sensor_query(sensor_query: str) -> dict[str, Any]:
+    return get_default_taxonomy_scorer().score_sensor(sensor_query)

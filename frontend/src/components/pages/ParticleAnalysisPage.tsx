@@ -611,11 +611,6 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
                                 extrae las partículas visibles, genera una máscara binaria para aislarlas y
                                 calcula métricas que permiten estimar los niveles de PM10 y PM2.5.
                             </p>
-                            <p className="mt-2 text-sm font-medium leading-6 text-amber-800">
-                                Todas las estimaciones mostradas aquí, incluido el modelo probabilístico
-                                de posibles fuentes contaminantes, son aproximaciones orientativas y no
-                                están exentas de error.
-                            </p>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
