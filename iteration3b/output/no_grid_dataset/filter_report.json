@@ -1,0 +1,25 @@
+{
+  "dataset_dir": "/Users/ibon-personal/Desktop/INFOR/iteration3b/output/dataset",
+  "review_csv": "/Users/ibon-personal/Desktop/INFOR/iteration3b/output/grid_review/grid_review_simple.csv",
+  "output_dir": "/Users/ibon-personal/Desktop/INFOR/iteration3b/output/no_grid_dataset",
+  "manual_labels_count": 60,
+  "final_grid_label_counts": {
+    "no_grid": 2082,
+    "unknown": 64,
+    "grid": 493
+  },
+  "final_grid_label_source_counts": {
+    "predicted_non_grid_rule": 2042,
+    "missing_prediction": 64,
+    "predicted_grid": 473,
+    "manual_label": 60
+  },
+  "kept_image_count": 2082,
+  "kept_particle_count": 1048547,
+  "rule_used_for_unlabeled_rows": {
+    "grid": "exclude when roi_grid_label == grid",
+    "no_grid": "keep when roi_grid_label == no_grid",
+    "uncertain": "keep as no_grid based on current manual sample",
+    "blank_or_missing": "exclude"
+  }
+}

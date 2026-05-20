@@ -1,0 +1,20 @@
+{
+  "input_csv": "/Users/ibon-personal/Desktop/INFOR/iteration1/output/dataset/image_features_final.csv",
+  "output_dir": "/Users/ibon-personal/Desktop/INFOR/iteration1/output/analysis/pca",
+  "rows_loaded": 2565,
+  "rows_used": 2565,
+  "sample_size_argument": 0,
+  "sampled_indices": null,
+  "feature_count": 22,
+  "variance_threshold": 0.85,
+  "retained_components": 7,
+  "files": {
+    "pca_variance_csv": "/Users/ibon-personal/Desktop/INFOR/iteration1/output/analysis/pca/pca_variance.csv",
+    "pca_scores_csv": "/Users/ibon-personal/Desktop/INFOR/iteration1/output/analysis/pca/pca_scores_retained.csv",
+    "pca_projection_csv": "/Users/ibon-personal/Desktop/INFOR/iteration1/output/analysis/pca/pca_projection_2d.csv",
+    "pca_loadings_csv": "/Users/ibon-personal/Desktop/INFOR/iteration1/output/analysis/pca/pca_loadings.csv",
+    "pca_report_json": "/Users/ibon-personal/Desktop/INFOR/iteration1/output/analysis/pca/pca_report.json",
+    "pca_scree_plot": "/Users/ibon-personal/Desktop/INFOR/iteration1/output/analysis/pca/pca_scree_plot.png",
+    "pca_projection_plot": "/Users/ibon-personal/Desktop/INFOR/iteration1/output/analysis/pca/pca_projection_2d.png"
+  }
+}

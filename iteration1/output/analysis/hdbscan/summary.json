@@ -1,0 +1,186 @@
+{
+  "selected_input_csv": "/Users/ibon-personal/Desktop/INFOR/iteration1/output/dataset/image_features_final.csv",
+  "pca_input_csv": "/Users/ibon-personal/Desktop/INFOR/iteration1/output/analysis/pca/pca_scores_retained.csv",
+  "output_dir": "/Users/ibon-personal/Desktop/INFOR/iteration1/output/analysis/hdbscan",
+  "rows_by_loaded_space": {
+    "selected_features": 2565,
+    "pca_scores": 2565
+  },
+  "rows_used": 2565,
+  "sample_size_argument": 0,
+  "sampled_indices": null,
+  "feature_spaces": [
+    "selected_features",
+    "pca_scores"
+  ],
+  "hdbscan_min_cluster_size": 52,
+  "hdbscan_min_samples": null,
+  "stability_repeats": 30,
+  "bootstrap_repeats": 30,
+  "bootstrap_fraction": 0.8,
+  "benchmark_results_csv": "/Users/ibon-personal/Desktop/INFOR/iteration1/output/analysis/hdbscan/benchmark_results.csv",
+  "assignments_dir": "/Users/ibon-personal/Desktop/INFOR/iteration1/output/analysis/hdbscan/assignments",
+  "plot_files": {},
+  "rankings": {
+    "top_by_silhouette": [
+      {
+        "candidate_id": "pca_scores__hdbscan__mcs-52",
+        "feature_space": "pca_scores",
+        "method": "hdbscan",
+        "method_variant": "hdbscan",
+        "k": null,
+        "silhouette_score": 0.5834728418707004,
+        "calinski_harabasz_score": 981.6413755954732,
+        "davies_bouldin_score": 0.5611902416594784,
+        "repeat_mean_ari": 0.9992040787927307,
+        "bootstrap_mean_ari": 0.9026201982586631,
+        "num_clusters": 3,
+        "smallest_cluster_fraction": 0.028460038986354776,
+        "noise_fraction": 0.631578947368421
+      },
+      {
+        "candidate_id": "selected_features__hdbscan__mcs-52",
+        "feature_space": "selected_features",
+        "method": "hdbscan",
+        "method_variant": "hdbscan",
+        "k": null,
+        "silhouette_score": 0.5075280497143471,
+        "calinski_harabasz_score": 1133.8953301473825,
+        "davies_bouldin_score": 0.7569498962232984,
+        "repeat_mean_ari": 0.9997327105842779,
+        "bootstrap_mean_ari": 0.914958200258976,
+        "num_clusters": 2,
+        "smallest_cluster_fraction": 0.09317738791423003,
+        "noise_fraction": 0.6070175438596491
+      }
+    ],
+    "top_by_calinski_harabasz": [
+      {
+        "candidate_id": "selected_features__hdbscan__mcs-52",
+        "feature_space": "selected_features",
+        "method": "hdbscan",
+        "method_variant": "hdbscan",
+        "k": null,
+        "silhouette_score": 0.5075280497143471,
+        "calinski_harabasz_score": 1133.8953301473825,
+        "davies_bouldin_score": 0.7569498962232984,
+        "repeat_mean_ari": 0.9997327105842779,
+        "bootstrap_mean_ari": 0.914958200258976,
+        "num_clusters": 2,
+        "smallest_cluster_fraction": 0.09317738791423003,
+        "noise_fraction": 0.6070175438596491
+      },
+      {
+        "candidate_id": "pca_scores__hdbscan__mcs-52",
+        "feature_space": "pca_scores",
+        "method": "hdbscan",
+        "method_variant": "hdbscan",
+        "k": null,
+        "silhouette_score": 0.5834728418707004,
+        "calinski_harabasz_score": 981.6413755954732,
+        "davies_bouldin_score": 0.5611902416594784,
+        "repeat_mean_ari": 0.9992040787927307,
+        "bootstrap_mean_ari": 0.9026201982586631,
+        "num_clusters": 3,
+        "smallest_cluster_fraction": 0.028460038986354776,
+        "noise_fraction": 0.631578947368421
+      }
+    ],
+    "top_by_davies_bouldin": [
+      {
+        "candidate_id": "pca_scores__hdbscan__mcs-52",
+        "feature_space": "pca_scores",
+        "method": "hdbscan",
+        "method_variant": "hdbscan",
+        "k": null,
+        "silhouette_score": 0.5834728418707004,
+        "calinski_harabasz_score": 981.6413755954732,
+        "davies_bouldin_score": 0.5611902416594784,
+        "repeat_mean_ari": 0.9992040787927307,
+        "bootstrap_mean_ari": 0.9026201982586631,
+        "num_clusters": 3,
+        "smallest_cluster_fraction": 0.028460038986354776,
+        "noise_fraction": 0.631578947368421
+      },
+      {
+        "candidate_id": "selected_features__hdbscan__mcs-52",
+        "feature_space": "selected_features",
+        "method": "hdbscan",
+        "method_variant": "hdbscan",
+        "k": null,
+        "silhouette_score": 0.5075280497143471,
+        "calinski_harabasz_score": 1133.8953301473825,
+        "davies_bouldin_score": 0.7569498962232984,
+        "repeat_mean_ari": 0.9997327105842779,
+        "bootstrap_mean_ari": 0.914958200258976,
+        "num_clusters": 2,
+        "smallest_cluster_fraction": 0.09317738791423003,
+        "noise_fraction": 0.6070175438596491
+      }
+    ],
+    "top_by_repeat_stability": [
+      {
+        "candidate_id": "selected_features__hdbscan__mcs-52",
+        "feature_space": "selected_features",
+        "method": "hdbscan",
+        "method_variant": "hdbscan",
+        "k": null,
+        "silhouette_score": 0.5075280497143471,
+        "calinski_harabasz_score": 1133.8953301473825,
+        "davies_bouldin_score": 0.7569498962232984,
+        "repeat_mean_ari": 0.9997327105842779,
+        "bootstrap_mean_ari": 0.914958200258976,
+        "num_clusters": 2,
+        "smallest_cluster_fraction": 0.09317738791423003,
+        "noise_fraction": 0.6070175438596491
+      },
+      {
+        "candidate_id": "pca_scores__hdbscan__mcs-52",
+        "feature_space": "pca_scores",
+        "method": "hdbscan",
+        "method_variant": "hdbscan",
+        "k": null,
+        "silhouette_score": 0.5834728418707004,
+        "calinski_harabasz_score": 981.6413755954732,
+        "davies_bouldin_score": 0.5611902416594784,
+        "repeat_mean_ari": 0.9992040787927307,
+        "bootstrap_mean_ari": 0.9026201982586631,
+        "num_clusters": 3,
+        "smallest_cluster_fraction": 0.028460038986354776,
+        "noise_fraction": 0.631578947368421
+      }
+    ],
+    "top_by_bootstrap_stability": [
+      {
+        "candidate_id": "selected_features__hdbscan__mcs-52",
+        "feature_space": "selected_features",
+        "method": "hdbscan",
+        "method_variant": "hdbscan",
+        "k": null,
+        "silhouette_score": 0.5075280497143471,
+        "calinski_harabasz_score": 1133.8953301473825,
+        "davies_bouldin_score": 0.7569498962232984,
+        "repeat_mean_ari": 0.9997327105842779,
+        "bootstrap_mean_ari": 0.914958200258976,
+        "num_clusters": 2,
+        "smallest_cluster_fraction": 0.09317738791423003,
+        "noise_fraction": 0.6070175438596491
+      },
+      {
+        "candidate_id": "pca_scores__hdbscan__mcs-52",
+        "feature_space": "pca_scores",
+        "method": "hdbscan",
+        "method_variant": "hdbscan",
+        "k": null,
+        "silhouette_score": 0.5834728418707004,
+        "calinski_harabasz_score": 981.6413755954732,
+        "davies_bouldin_score": 0.5611902416594784,
+        "repeat_mean_ari": 0.9992040787927307,
+        "bootstrap_mean_ari": 0.9026201982586631,
+        "num_clusters": 3,
+        "smallest_cluster_fraction": 0.028460038986354776,
+        "noise_fraction": 0.631578947368421
+      }
+    ]
+  }
+}

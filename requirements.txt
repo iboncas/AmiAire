@@ -7,3 +7,5 @@ numpy
 matplotlib
 scikit-learn
 hdbscan
+opencv-python
+scikit-image

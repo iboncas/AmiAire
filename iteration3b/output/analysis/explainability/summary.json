@@ -1,0 +1,94 @@
+{
+  "analysis_root": "/Users/ibon-personal/Desktop/INFOR/iteration3b/output/analysis",
+  "output_dir": "/Users/ibon-personal/Desktop/INFOR/iteration3b/output/analysis/explainability",
+  "candidate_id": "pca_scores__kmeans__k-4",
+  "candidate_result": {
+    "method": "kmeans",
+    "feature_space": "pca_scores",
+    "k": 4,
+    "silhouette_score": 0.3758422772706279,
+    "bootstrap_mean_ari": 0.9951855028288784,
+    "repeat_mean_ari": 1.0
+  },
+  "assignments_csv": "/Users/ibon-personal/Desktop/INFOR/iteration3b/output/analysis/kmeans/assignments/pca_scores__kmeans__k-4.csv",
+  "feature_csv": "/Users/ibon-personal/Desktop/INFOR/iteration3b/output/no_grid_dataset/image_features_final.csv",
+  "candidate_feature_csv": "/Users/ibon-personal/Desktop/INFOR/iteration3b/output/analysis/pca/pca_scores_retained.csv",
+  "rows_used": 2082,
+  "cluster_count": 4,
+  "cluster_labels": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "top_discriminative_features": [
+    "aspect_ratio_median",
+    "mean_pixel_intensity",
+    "area_median",
+    "area_iqr",
+    "circularity_iqr",
+    "orientation_entropy",
+    "feret_p90",
+    "circular_variance",
+    "area_percentage",
+    "eccentricity_iqr"
+  ],
+  "cluster_descriptions": [
+    {
+      "cluster_label": 1,
+      "count": 434,
+      "fraction": 0.2084534101825168,
+      "morphology_summary": "smaller particle bodies, shorter upper-tail particle extent, more compact non-elongated shapes, less circular particles, more aligned orientations",
+      "top_positive_signature": "mean_intensity_median (z=+0.99); aspect_ratio_iqr (z=+0.66); num_particles (z=+0.51); eccentricity_iqr (z=+0.31)",
+      "top_negative_signature": "aspect_ratio_median (z=-1.77); circularity_iqr (z=-1.76); area_iqr (z=-1.29); orientation_entropy (z=-1.28)"
+    },
+    {
+      "cluster_label": 2,
+      "count": 1210,
+      "fraction": 0.5811719500480308,
+      "morphology_summary": "heterogeneous circularity, less circular particles",
+      "top_positive_signature": "aspect_ratio_iqr (z=+0.66); aspect_ratio_median (z=+0.66); circularity_iqr (z=+0.61); eccentricity_iqr (z=+0.44)",
+      "top_negative_signature": "circularity_median (z=-0.83); area_percentage (z=-0.42); solidity_iqr (z=-0.41); area_median (z=-0.34)"
+    },
+    {
+      "cluster_label": 3,
+      "count": 273,
+      "fraction": 0.13112391930835735,
+      "morphology_summary": "larger particle bodies, long upper-tail particle extent, round compact particles, heterogeneous solidity, high orientation dispersion, broad directional spread, lower particle counts",
+      "top_positive_signature": "area_median (z=+1.73); area_iqr (z=+1.29); circularity_median (z=+1.26); orientation_entropy (z=+1.19)",
+      "top_negative_signature": "eccentricity_iqr (z=-1.83); aspect_ratio_iqr (z=-1.55); circularity_iqr (z=-0.94); num_particles (z=-0.90)"
+    },
+    {
+      "cluster_label": 4,
+      "count": 165,
+      "fraction": 0.0792507204610951,
+      "morphology_summary": "long upper-tail particle extent, very elongated tail cases, heterogeneous circularity, higher particle counts, darker overall deposits",
+      "top_positive_signature": "area_percentage (z=+2.41); num_particles (z=+1.34); aspect_ratio_p90 (z=+1.04); feret_p90 (z=+0.95)",
+      "top_negative_signature": "mean_pixel_intensity (z=-2.86); mean_intensity_median (z=-1.30); mean_intensity_iqr (z=-0.83); circularity_median (z=-0.52)"
+    }
+  ],
+  "alternative_candidate_agreement": {
+    "alternative_candidate_id": "pca_scores__kmeans__k-5",
+    "adjusted_rand_index": 0.911372550330052,
+    "normalized_mutual_information": 0.892399590686514,
+    "overlap_count": 2082
+  },
+  "surrogate_summary": {
+    "status": "completed",
+    "random_forest_balanced_accuracy_mean": 0.951736757136626,
+    "random_forest_balanced_accuracy_std": 0.007747303804081412,
+    "logistic_balanced_accuracy_mean": 0.9884855873257127,
+    "logistic_balanced_accuracy_std": 0.00769627566430292
+  },
+  "plot_files": {
+    "cluster_profile_heatmap": "/Users/ibon-personal/Desktop/INFOR/iteration3b/output/analysis/explainability/cluster_profile_heatmap.png",
+    "pca_colored_by_cluster": "/Users/ibon-personal/Desktop/INFOR/iteration3b/output/analysis/explainability/pca_colored_by_cluster.png",
+    "top_feature_boxplots": "/Users/ibon-personal/Desktop/INFOR/iteration3b/output/analysis/explainability/top_feature_boxplots.png",
+    "silhouette_profile": "/Users/ibon-personal/Desktop/INFOR/iteration3b/output/analysis/explainability/silhouette_profile.png",
+    "surrogate_feature_importance": "/Users/ibon-personal/Desktop/INFOR/iteration3b/output/analysis/explainability/surrogate_feature_importance.png"
+  },
+  "notes": [
+    "Cluster profiles are computed from the saved Phase 6 feature matrix, not from the discarded raw feature pool.",
+    "Representative examples default to image IDs and metadata. Real image exports require an optional image-path manifest."
+  ]
+}

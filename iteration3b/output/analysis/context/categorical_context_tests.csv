@@ -1,0 +1,2 @@
+variable,chi_square_statistic,chi_square_p_value,degrees_of_freedom,cramers_v,category_count,chi_square_p_value_bh
+capture_season,135.36487378548236,9.324280310413486e-25,9,0.14721497901268887,4,9.324280310413486e-25

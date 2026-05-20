@@ -1,0 +1,6 @@
+reference_candidate_id,comparison_candidate_id,overlap_count,adjusted_rand_index,normalized_mutual_information
+pca_scores__kmeans__k-4,pca_scores__kmeans__k-5,2565,0.9229146136439889,0.8905108405562419
+pca_scores__kmeans__k-4,pca_scores__fuzzy__k-4,2565,0.8660686676018003,0.8270256088927279
+pca_scores__kmeans__k-4,pca_scores__kmeans__k-3,2565,0.7602213380182664,0.7735919278324016
+pca_scores__kmeans__k-4,pca_scores__fuzzy__k-3,2565,0.682738310190412,0.6297763067603179
+pca_scores__kmeans__k-4,pca_scores__kmeans__k-2,2565,0.3097107197244549,0.37467617053595753

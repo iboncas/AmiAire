@@ -1,0 +1,94 @@
+{
+  "analysis_root": "/Users/ibon-personal/Desktop/INFOR/iteration3b/output/analysis",
+  "output_dir": "/Users/ibon-personal/Desktop/INFOR/iteration3b/output/analysis/context",
+  "candidate_id": "pca_scores__kmeans__k-4",
+  "candidate_result": {
+    "method": "kmeans",
+    "feature_space": "pca_scores",
+    "k": 4
+  },
+  "assignments_csv": "/Users/ibon-personal/Desktop/INFOR/iteration3b/output/analysis/kmeans/assignments/pca_scores__kmeans__k-4.csv",
+  "rows_used": 2082,
+  "cluster_labels": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "numeric_context_columns": [
+    "latitude",
+    "longitude",
+    "capture_year",
+    "capture_month",
+    "capture_dayofyear",
+    "capture_weekday"
+  ],
+  "categorical_context_columns": [
+    "capture_season"
+  ],
+  "top_numeric_associations": [
+    {
+      "variable": "capture_dayofyear",
+      "kruskal_wallis_statistic": 45.61858015361144,
+      "kruskal_wallis_p_value": 6.835767721736344e-10,
+      "epsilon_squared": 0.02050942259557817,
+      "kruskal_wallis_p_value_bh": 2.15097754526791e-09
+    },
+    {
+      "variable": "capture_month",
+      "kruskal_wallis_statistic": 45.521075872613864,
+      "kruskal_wallis_p_value": 7.169925150893033e-10,
+      "epsilon_squared": 0.020462500419929676,
+      "kruskal_wallis_p_value_bh": 2.15097754526791e-09
+    },
+    {
+      "variable": "longitude",
+      "kruskal_wallis_statistic": 26.95182466174059,
+      "kruskal_wallis_p_value": 6.02586767312638e-06,
+      "epsilon_squared": 0.011526383379085944,
+      "kruskal_wallis_p_value_bh": 1.205173534625276e-05
+    },
+    {
+      "variable": "capture_year",
+      "kruskal_wallis_statistic": 16.19412147907556,
+      "kruskal_wallis_p_value": 0.0010346559338739493,
+      "epsilon_squared": 0.006349432858072935,
+      "kruskal_wallis_p_value_bh": 0.0014960220832812888
+    },
+    {
+      "variable": "capture_weekday",
+      "kruskal_wallis_statistic": 15.799219595708152,
+      "kruskal_wallis_p_value": 0.001246685069401074,
+      "epsilon_squared": 0.006159393453180054,
+      "kruskal_wallis_p_value_bh": 0.0014960220832812888
+    }
+  ],
+  "top_categorical_associations": [
+    {
+      "variable": "capture_season",
+      "chi_square_statistic": 135.36487378548236,
+      "chi_square_p_value": 9.324280310413486e-25,
+      "degrees_of_freedom": 9,
+      "cramers_v": 0.14721497901268887,
+      "category_count": 4,
+      "chi_square_p_value_bh": 9.324280310413486e-25
+    }
+  ],
+  "context_model_summary": {
+    "status": "completed",
+    "random_forest_balanced_accuracy_mean": 0.5347354078315659,
+    "random_forest_balanced_accuracy_std": 0.03793383594036549,
+    "logistic_balanced_accuracy_mean": 0.3740401303501836,
+    "logistic_balanced_accuracy_std": 0.01925593124539241
+  },
+  "plot_files": {
+    "numeric_context_heatmap": "/Users/ibon-personal/Desktop/INFOR/iteration3b/output/analysis/context/numeric_context_heatmap.png",
+    "numeric_context_boxplots": "/Users/ibon-personal/Desktop/INFOR/iteration3b/output/analysis/context/numeric_context_boxplots.png",
+    "context_model_feature_importance": "/Users/ibon-personal/Desktop/INFOR/iteration3b/output/analysis/context/context_model_feature_importance.png",
+    "capture_season_enrichment_heatmap": "/Users/ibon-personal/Desktop/INFOR/iteration3b/output/analysis/context/capture_season_enrichment_heatmap.png"
+  },
+  "notes": [
+    "The contextual association step measures association and enrichment, not direct chemical proof.",
+    "This implementation prioritizes project-native station and capture-time variables before any external API enrichment."
+  ]
+}

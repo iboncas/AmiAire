@@ -1,0 +1,147 @@
+{
+  "analysis_root": "/Users/ibon-personal/Desktop/INFOR/iteration1/output/analysis",
+  "output_dir": "/Users/ibon-personal/Desktop/INFOR/iteration1/output/analysis/context",
+  "candidate_id": "pca_scores__kmeans__k-4",
+  "candidate_result": {
+    "method": "kmeans",
+    "feature_space": "pca_scores",
+    "k": 4
+  },
+  "assignments_csv": "/Users/ibon-personal/Desktop/INFOR/iteration1/output/analysis/kmeans/assignments/pca_scores__kmeans__k-4.csv",
+  "rows_used": 2565,
+  "cluster_labels": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "numeric_context_columns": [
+    "latitude",
+    "longitude",
+    "official_station_distance_km",
+    "record_pm10",
+    "record_pm25",
+    "official_pm10",
+    "official_pm25",
+    "official_pm25_to_pm10_ratio",
+    "official_pm10_minus_record_pm10",
+    "official_pm25_minus_record_pm25",
+    "abs_pm10_gap",
+    "abs_pm25_gap",
+    "official_pm_total",
+    "record_pm_total",
+    "capture_year",
+    "capture_month",
+    "capture_dayofyear",
+    "capture_weekday"
+  ],
+  "categorical_context_columns": [
+    "official_station_id",
+    "capture_season",
+    "station_distance_band",
+    "official_pm25_band",
+    "official_pm10_band"
+  ],
+  "top_numeric_associations": [
+    {
+      "variable": "capture_year",
+      "kruskal_wallis_statistic": 388.7175195445573,
+      "kruskal_wallis_p_value": 6.15082272375159e-84,
+      "epsilon_squared": 0.15061207323098685,
+      "kruskal_wallis_p_value_bh": 1.1071480902752862e-82
+    },
+    {
+      "variable": "capture_dayofyear",
+      "kruskal_wallis_statistic": 112.45585572233287,
+      "kruskal_wallis_p_value": 3.2491066783399424e-24,
+      "epsilon_squared": 0.04273949852492498,
+      "kruskal_wallis_p_value_bh": 2.924196010505948e-23
+    },
+    {
+      "variable": "abs_pm10_gap",
+      "kruskal_wallis_statistic": 76.69670305986811,
+      "kruskal_wallis_p_value": 1.5682187415611968e-16,
+      "epsilon_squared": 0.028776533799245652,
+      "kruskal_wallis_p_value_bh": 9.40931244936718e-16
+    },
+    {
+      "variable": "official_station_distance_km",
+      "kruskal_wallis_statistic": 74.08340987383623,
+      "kruskal_wallis_p_value": 5.695612001123781e-16,
+      "epsilon_squared": 0.0277561147496432,
+      "kruskal_wallis_p_value_bh": 2.5630254005057015e-15
+    },
+    {
+      "variable": "official_pm25",
+      "kruskal_wallis_statistic": 65.94605507260772,
+      "kruskal_wallis_p_value": 3.1475491204380986e-14,
+      "epsilon_squared": 0.024578701707382945,
+      "kruskal_wallis_p_value_bh": 1.1331176833577156e-13
+    }
+  ],
+  "top_categorical_associations": [
+    {
+      "variable": "official_station_id",
+      "chi_square_statistic": 1861.168519262672,
+      "chi_square_p_value": 1.4549981866679035e-212,
+      "degrees_of_freedom": 327,
+      "cramers_v": 0.4918000141981083,
+      "category_count": 110,
+      "chi_square_p_value_bh": 7.274990933339517e-212
+    },
+    {
+      "variable": "official_pm25_band",
+      "chi_square_statistic": 79.05242898540097,
+      "chi_square_p_value": 4.9008785718549114e-17,
+      "degrees_of_freedom": 3,
+      "cramers_v": 0.17555529164100486,
+      "category_count": 2,
+      "chi_square_p_value_bh": 8.168130953091519e-17
+    },
+    {
+      "variable": "capture_season",
+      "chi_square_statistic": 148.39533240986438,
+      "chi_square_p_value": 1.8957208712549366e-27,
+      "degrees_of_freedom": 9,
+      "cramers_v": 0.1388691599601098,
+      "category_count": 4,
+      "chi_square_p_value_bh": 4.739302178137342e-27
+    },
+    {
+      "variable": "station_distance_band",
+      "chi_square_statistic": 80.18597172972244,
+      "chi_square_p_value": 1.4843338311772893e-13,
+      "degrees_of_freedom": 9,
+      "cramers_v": 0.1020809930382,
+      "category_count": 4,
+      "chi_square_p_value_bh": 1.8554172889716116e-13
+    },
+    {
+      "variable": "official_pm10_band",
+      "chi_square_statistic": 11.119639066999088,
+      "chi_square_p_value": 0.01109622396731958,
+      "degrees_of_freedom": 3,
+      "cramers_v": 0.06584179475418243,
+      "category_count": 2,
+      "chi_square_p_value_bh": 0.01109622396731958
+    }
+  ],
+  "context_model_summary": {
+    "status": "completed",
+    "random_forest_balanced_accuracy_mean": 0.6491282932143617,
+    "random_forest_balanced_accuracy_std": 0.02619369810695231,
+    "logistic_balanced_accuracy_mean": 0.5424413687311226,
+    "logistic_balanced_accuracy_std": 0.030094721958649123
+  },
+  "plot_files": {
+    "numeric_context_heatmap": "/Users/ibon-personal/Desktop/INFOR/iteration1/output/analysis/context/numeric_context_heatmap.png",
+    "numeric_context_boxplots": "/Users/ibon-personal/Desktop/INFOR/iteration1/output/analysis/context/numeric_context_boxplots.png",
+    "context_model_feature_importance": "/Users/ibon-personal/Desktop/INFOR/iteration1/output/analysis/context/context_model_feature_importance.png",
+    "official_station_id_enrichment_heatmap": "/Users/ibon-personal/Desktop/INFOR/iteration1/output/analysis/context/official_station_enrichment_heatmap.png",
+    "capture_season_enrichment_heatmap": "/Users/ibon-personal/Desktop/INFOR/iteration1/output/analysis/context/capture_season_enrichment_heatmap.png"
+  },
+  "notes": [
+    "The contextual association step measures association and enrichment, not direct chemical proof.",
+    "This implementation prioritizes project-native station and capture-time variables before any external API enrichment."
+  ]
+}

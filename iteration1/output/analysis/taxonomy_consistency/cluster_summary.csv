@@ -1,0 +1,5 @@
+cluster_label,cluster_primary_category,cluster_confidence,row_count,agreement_count,agreement_rate,dominant_temp_category,dominant_temp_category_count,dominant_temp_category_fraction,mean_cluster_assigned_percentage_in_temp,mean_temp_top_percentage
+1,fibrous_synthetic_materials,moderate,1335,491,0.36779026217228467,fibrous_synthetic_materials,491,0.36779026217228467,24.498149091219087,40.741832103752564
+2,combustion_related,high,550,528,0.96,combustion_related,528,0.96,83.22614831965805,84.1533274150325
+3,fibrous_synthetic_materials,high,317,169,0.5331230283911672,fibrous_synthetic_materials,169,0.5331230283911672,34.62705138363526,51.772506731292644
+4,mixed_unknown,high,363,239,0.6584022038567493,mixed_unknown,239,0.6584022038567493,44.4537044060198,57.596278511772596

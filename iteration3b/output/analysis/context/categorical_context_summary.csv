@@ -1,0 +1,17 @@
+variable,cluster_label,category,count,fraction_within_cluster
+capture_season,1,autumn,1,0.002304147465437788
+capture_season,1,spring,366,0.8433179723502304
+capture_season,1,summer,0,0.0
+capture_season,1,winter,67,0.1543778801843318
+capture_season,2,autumn,12,0.009917355371900827
+capture_season,2,spring,941,0.7776859504132232
+capture_season,2,summer,1,0.0008264462809917355
+capture_season,2,winter,256,0.2115702479338843
+capture_season,3,autumn,30,0.10989010989010989
+capture_season,3,spring,203,0.7435897435897436
+capture_season,3,summer,1,0.003663003663003663
+capture_season,3,winter,39,0.14285714285714285
+capture_season,4,autumn,1,0.006060606060606061
+capture_season,4,spring,141,0.8545454545454545
+capture_season,4,summer,0,0.0
+capture_season,4,winter,23,0.1393939393939394

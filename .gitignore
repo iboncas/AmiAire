@@ -28,9 +28,9 @@ backend/node_modules/
 frontend/node_modules/
 frontend/build/
 frontend/dist/
+*/output/**/particles.csv
 
 # Database
-AQ_database_filtered_june_2087.json
-new_data.bson
+data/
 
 __pycache__/

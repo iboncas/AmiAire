@@ -1,0 +1,30 @@
+{
+  "iteration1_dataset_dir": "/Users/ibon-personal/Desktop/INFOR/iteration1/output/dataset",
+  "grid_review_csv": "/Users/ibon-personal/Desktop/INFOR/iteration3a/output/grid_review/grid_review_simple.csv",
+  "grid_predictions_csv": "/Users/ibon-personal/Desktop/INFOR/iteration3a/output/dataset/image_features_enriched.csv",
+  "output_dir": "/Users/ibon-personal/Desktop/INFOR/iteration3a/output/no_grid_from_iteration1",
+  "manual_labels_count": 60,
+  "predicted_labels_count": 2575,
+  "final_grid_label_counts": {
+    "no_grid": 2072,
+    "grid": 493
+  },
+  "final_grid_label_source_counts": {
+    "predicted_non_grid_rule": 2033,
+    "predicted_grid": 473,
+    "manual_label": 59
+  },
+  "kept_image_count": 2072,
+  "kept_manifest_rows": 2072,
+  "rule_used_for_unlabeled_rows": {
+    "grid": "exclude when roi_grid_label == grid",
+    "no_grid": "keep when roi_grid_label == no_grid",
+    "uncertain": "keep as no_grid based on current manual sample",
+    "blank_or_missing": "exclude"
+  },
+  "raw_output_files": {
+    "image_features_final_csv": "/Users/ibon-personal/Desktop/INFOR/iteration3a/output/no_grid_from_iteration1/image_features_final.csv",
+    "image_manifest_csv": "/Users/ibon-personal/Desktop/INFOR/iteration3a/output/no_grid_from_iteration1/image_manifest.csv",
+    "grid_decisions_csv": "/Users/ibon-personal/Desktop/INFOR/iteration3a/output/no_grid_from_iteration1/grid_decisions.csv"
+  }
+}

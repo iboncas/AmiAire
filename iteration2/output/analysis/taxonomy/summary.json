@@ -1,0 +1,20 @@
+{
+  "explainability_dir": "/Users/ibon-personal/Desktop/INFOR/iteration2/output/analysis/explainability",
+  "output_dir": "/Users/ibon-personal/Desktop/INFOR/iteration2/output/analysis/taxonomy",
+  "categories": [
+    "combustion_related",
+    "mechanical_non_combustion_particulate",
+    "biological",
+    "fibrous_synthetic_materials",
+    "industrial",
+    "mixed_unknown"
+  ],
+  "cluster_count": 3,
+  "notes": [
+    "These labels are cautious morphology-based source-category suggestions, not chemical identification claims.",
+    "The scoring rules are heuristic and intended to support thesis discussion, not replace laboratory validation."
+  ],
+  "plot_files": {
+    "taxonomy_score_heatmap": "/Users/ibon-personal/Desktop/INFOR/iteration2/output/analysis/taxonomy/taxonomy_score_heatmap.png"
+  }
+}

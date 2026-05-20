@@ -1,0 +1,186 @@
+{
+  "selected_input_csv": "/Users/ibon-personal/Desktop/INFOR/iteration3a/output/no_grid_from_iteration1/image_features_final.csv",
+  "pca_input_csv": "/Users/ibon-personal/Desktop/INFOR/iteration3a/output/analysis_iter1_nogrid/pca/pca_scores_retained.csv",
+  "output_dir": "/Users/ibon-personal/Desktop/INFOR/iteration3a/output/analysis_iter1_nogrid/hdbscan",
+  "rows_by_loaded_space": {
+    "selected_features": 2072,
+    "pca_scores": 2072
+  },
+  "rows_used": 2072,
+  "sample_size_argument": 0,
+  "sampled_indices": null,
+  "feature_spaces": [
+    "selected_features",
+    "pca_scores"
+  ],
+  "hdbscan_min_cluster_size": 42,
+  "hdbscan_min_samples": null,
+  "stability_repeats": 30,
+  "bootstrap_repeats": 30,
+  "bootstrap_fraction": 0.8,
+  "benchmark_results_csv": "/Users/ibon-personal/Desktop/INFOR/iteration3a/output/analysis_iter1_nogrid/hdbscan/benchmark_results.csv",
+  "assignments_dir": "/Users/ibon-personal/Desktop/INFOR/iteration3a/output/analysis_iter1_nogrid/hdbscan/assignments",
+  "plot_files": {},
+  "rankings": {
+    "top_by_silhouette": [
+      {
+        "candidate_id": "pca_scores__hdbscan__mcs-42",
+        "feature_space": "pca_scores",
+        "method": "hdbscan",
+        "method_variant": "hdbscan",
+        "k": null,
+        "silhouette_score": 0.5594815601979671,
+        "calinski_harabasz_score": 881.113275254113,
+        "davies_bouldin_score": 0.6283932911090784,
+        "repeat_mean_ari": 0.9865368699428326,
+        "bootstrap_mean_ari": 0.9143477578662946,
+        "num_clusters": 3,
+        "smallest_cluster_fraction": 0.029922779922779922,
+        "noise_fraction": 0.5468146718146718
+      },
+      {
+        "candidate_id": "selected_features__hdbscan__mcs-42",
+        "feature_space": "selected_features",
+        "method": "hdbscan",
+        "method_variant": "hdbscan",
+        "k": null,
+        "silhouette_score": 0.5080519007847532,
+        "calinski_harabasz_score": 986.2408430987148,
+        "davies_bouldin_score": 0.754568778857146,
+        "repeat_mean_ari": 0.9995585619236398,
+        "bootstrap_mean_ari": 0.8946929505484765,
+        "num_clusters": 2,
+        "smallest_cluster_fraction": 0.09845559845559845,
+        "noise_fraction": 0.5637065637065637
+      }
+    ],
+    "top_by_calinski_harabasz": [
+      {
+        "candidate_id": "selected_features__hdbscan__mcs-42",
+        "feature_space": "selected_features",
+        "method": "hdbscan",
+        "method_variant": "hdbscan",
+        "k": null,
+        "silhouette_score": 0.5080519007847532,
+        "calinski_harabasz_score": 986.2408430987148,
+        "davies_bouldin_score": 0.754568778857146,
+        "repeat_mean_ari": 0.9995585619236398,
+        "bootstrap_mean_ari": 0.8946929505484765,
+        "num_clusters": 2,
+        "smallest_cluster_fraction": 0.09845559845559845,
+        "noise_fraction": 0.5637065637065637
+      },
+      {
+        "candidate_id": "pca_scores__hdbscan__mcs-42",
+        "feature_space": "pca_scores",
+        "method": "hdbscan",
+        "method_variant": "hdbscan",
+        "k": null,
+        "silhouette_score": 0.5594815601979671,
+        "calinski_harabasz_score": 881.113275254113,
+        "davies_bouldin_score": 0.6283932911090784,
+        "repeat_mean_ari": 0.9865368699428326,
+        "bootstrap_mean_ari": 0.9143477578662946,
+        "num_clusters": 3,
+        "smallest_cluster_fraction": 0.029922779922779922,
+        "noise_fraction": 0.5468146718146718
+      }
+    ],
+    "top_by_davies_bouldin": [
+      {
+        "candidate_id": "pca_scores__hdbscan__mcs-42",
+        "feature_space": "pca_scores",
+        "method": "hdbscan",
+        "method_variant": "hdbscan",
+        "k": null,
+        "silhouette_score": 0.5594815601979671,
+        "calinski_harabasz_score": 881.113275254113,
+        "davies_bouldin_score": 0.6283932911090784,
+        "repeat_mean_ari": 0.9865368699428326,
+        "bootstrap_mean_ari": 0.9143477578662946,
+        "num_clusters": 3,
+        "smallest_cluster_fraction": 0.029922779922779922,
+        "noise_fraction": 0.5468146718146718
+      },
+      {
+        "candidate_id": "selected_features__hdbscan__mcs-42",
+        "feature_space": "selected_features",
+        "method": "hdbscan",
+        "method_variant": "hdbscan",
+        "k": null,
+        "silhouette_score": 0.5080519007847532,
+        "calinski_harabasz_score": 986.2408430987148,
+        "davies_bouldin_score": 0.754568778857146,
+        "repeat_mean_ari": 0.9995585619236398,
+        "bootstrap_mean_ari": 0.8946929505484765,
+        "num_clusters": 2,
+        "smallest_cluster_fraction": 0.09845559845559845,
+        "noise_fraction": 0.5637065637065637
+      }
+    ],
+    "top_by_repeat_stability": [
+      {
+        "candidate_id": "selected_features__hdbscan__mcs-42",
+        "feature_space": "selected_features",
+        "method": "hdbscan",
+        "method_variant": "hdbscan",
+        "k": null,
+        "silhouette_score": 0.5080519007847532,
+        "calinski_harabasz_score": 986.2408430987148,
+        "davies_bouldin_score": 0.754568778857146,
+        "repeat_mean_ari": 0.9995585619236398,
+        "bootstrap_mean_ari": 0.8946929505484765,
+        "num_clusters": 2,
+        "smallest_cluster_fraction": 0.09845559845559845,
+        "noise_fraction": 0.5637065637065637
+      },
+      {
+        "candidate_id": "pca_scores__hdbscan__mcs-42",
+        "feature_space": "pca_scores",
+        "method": "hdbscan",
+        "method_variant": "hdbscan",
+        "k": null,
+        "silhouette_score": 0.5594815601979671,
+        "calinski_harabasz_score": 881.113275254113,
+        "davies_bouldin_score": 0.6283932911090784,
+        "repeat_mean_ari": 0.9865368699428326,
+        "bootstrap_mean_ari": 0.9143477578662946,
+        "num_clusters": 3,
+        "smallest_cluster_fraction": 0.029922779922779922,
+        "noise_fraction": 0.5468146718146718
+      }
+    ],
+    "top_by_bootstrap_stability": [
+      {
+        "candidate_id": "pca_scores__hdbscan__mcs-42",
+        "feature_space": "pca_scores",
+        "method": "hdbscan",
+        "method_variant": "hdbscan",
+        "k": null,
+        "silhouette_score": 0.5594815601979671,
+        "calinski_harabasz_score": 881.113275254113,
+        "davies_bouldin_score": 0.6283932911090784,
+        "repeat_mean_ari": 0.9865368699428326,
+        "bootstrap_mean_ari": 0.9143477578662946,
+        "num_clusters": 3,
+        "smallest_cluster_fraction": 0.029922779922779922,
+        "noise_fraction": 0.5468146718146718
+      },
+      {
+        "candidate_id": "selected_features__hdbscan__mcs-42",
+        "feature_space": "selected_features",
+        "method": "hdbscan",
+        "method_variant": "hdbscan",
+        "k": null,
+        "silhouette_score": 0.5080519007847532,
+        "calinski_harabasz_score": 986.2408430987148,
+        "davies_bouldin_score": 0.754568778857146,
+        "repeat_mean_ari": 0.9995585619236398,
+        "bootstrap_mean_ari": 0.8946929505484765,
+        "num_clusters": 2,
+        "smallest_cluster_fraction": 0.09845559845559845,
+        "noise_fraction": 0.5637065637065637
+      }
+    ]
+  }
+}

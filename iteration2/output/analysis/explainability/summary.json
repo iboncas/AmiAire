@@ -1,0 +1,85 @@
+{
+  "analysis_root": "/Users/ibon-personal/Desktop/INFOR/iteration2/output/analysis",
+  "output_dir": "/Users/ibon-personal/Desktop/INFOR/iteration2/output/analysis/explainability",
+  "candidate_id": "pca_scores__kmeans__k-3",
+  "candidate_result": {
+    "method": "kmeans",
+    "feature_space": "pca_scores",
+    "k": 3,
+    "silhouette_score": 0.23815774241001894,
+    "bootstrap_mean_ari": 0.9886472360439026,
+    "repeat_mean_ari": 0.9991310968664148
+  },
+  "assignments_csv": "/Users/ibon-personal/Desktop/INFOR/iteration2/output/analysis/kmeans/assignments/pca_scores__kmeans__k-3.csv",
+  "feature_csv": "/Users/ibon-personal/Desktop/INFOR/iteration2/output/dataset/image_features_final.csv",
+  "candidate_feature_csv": "/Users/ibon-personal/Desktop/INFOR/iteration2/output/analysis/pca/pca_scores_retained.csv",
+  "rows_used": 2578,
+  "cluster_count": 3,
+  "cluster_labels": [
+    1,
+    2,
+    3
+  ],
+  "top_discriminative_features": [
+    "eccentricity_iqr",
+    "mean_pixel_intensity",
+    "aspect_ratio_iqr",
+    "roi_v_std",
+    "roi_s_std",
+    "area_median",
+    "eccentricity_p90",
+    "solidity_iqr",
+    "feret_p90",
+    "circularity_median"
+  ],
+  "cluster_descriptions": [
+    {
+      "cluster_label": 1,
+      "count": 1773,
+      "fraction": 0.6877424359968968,
+      "morphology_summary": "heterogeneous circularity, less circular particles",
+      "top_positive_signature": "aspect_ratio_iqr (z=+0.65); mean_intensity_median (z=+0.64); roi_h_mean (z=+0.62); circularity_iqr (z=+0.60)",
+      "top_negative_signature": "circularity_median (z=-0.83); transit (z=-0.61); parking (z=-0.60); gas_station (z=-0.58)"
+    },
+    {
+      "cluster_label": 2,
+      "count": 367,
+      "fraction": 0.14235841737781227,
+      "morphology_summary": "very elongated tail cases, heterogeneous circularity, less circular particles, darker overall deposits",
+      "top_positive_signature": "roi_v_std (z=+1.62); roi_s_std (z=+1.40); aspect_ratio_p90 (z=+0.99); aspect_ratio_iqr (z=+0.65)",
+      "top_negative_signature": "mean_pixel_intensity (z=-2.04); mean_intensity_median (z=-1.16); circularity_median (z=-0.83); roi_h_mean (z=-0.83)"
+    },
+    {
+      "cluster_label": 3,
+      "count": 438,
+      "fraction": 0.16989914662529093,
+      "morphology_summary": "larger particle bodies, round compact particles, high orientation dispersion, broad directional spread",
+      "top_positive_signature": "area_median (z=+1.42); circularity_median (z=+1.27); area_iqr (z=+1.12); orientation_entropy (z=+1.03)",
+      "top_negative_signature": "eccentricity_iqr (z=-1.94); aspect_ratio_iqr (z=-1.60); circularity_iqr (z=-1.49); aspect_ratio_p90 (z=-0.85)"
+    }
+  ],
+  "alternative_candidate_agreement": {
+    "alternative_candidate_id": "pca_scores__kmeans__k-4",
+    "adjusted_rand_index": 0.5858897132192834,
+    "normalized_mutual_information": 0.6483486556066275,
+    "overlap_count": 2578
+  },
+  "surrogate_summary": {
+    "status": "completed",
+    "random_forest_balanced_accuracy_mean": 0.9576480282732538,
+    "random_forest_balanced_accuracy_std": 0.01110120176089788,
+    "logistic_balanced_accuracy_mean": 0.9886197587051653,
+    "logistic_balanced_accuracy_std": 0.00319607774472205
+  },
+  "plot_files": {
+    "cluster_profile_heatmap": "/Users/ibon-personal/Desktop/INFOR/iteration2/output/analysis/explainability/cluster_profile_heatmap.png",
+    "pca_colored_by_cluster": "/Users/ibon-personal/Desktop/INFOR/iteration2/output/analysis/explainability/pca_colored_by_cluster.png",
+    "top_feature_boxplots": "/Users/ibon-personal/Desktop/INFOR/iteration2/output/analysis/explainability/top_feature_boxplots.png",
+    "silhouette_profile": "/Users/ibon-personal/Desktop/INFOR/iteration2/output/analysis/explainability/silhouette_profile.png",
+    "surrogate_feature_importance": "/Users/ibon-personal/Desktop/INFOR/iteration2/output/analysis/explainability/surrogate_feature_importance.png"
+  },
+  "notes": [
+    "Cluster profiles are computed from the saved Phase 6 feature matrix, not from the discarded raw feature pool.",
+    "Representative examples default to image IDs and metadata. Real image exports require an optional image-path manifest."
+  ]
+}

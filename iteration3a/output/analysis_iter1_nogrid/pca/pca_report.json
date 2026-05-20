@@ -1,0 +1,275 @@
+{
+  "input_feature_count": 22,
+  "variance_threshold": 0.85,
+  "retained_components_for_variance_threshold": 8,
+  "explained_variance_ratio": [
+    0.32795046673638656,
+    0.20395159224096174,
+    0.11031407462645888,
+    0.06237053884684548,
+    0.059472148500235175,
+    0.04587934283958795,
+    0.038767551438093066,
+    0.03409087223843833,
+    0.02301494948311724,
+    0.019734481951972267,
+    0.015779153866767915,
+    0.012549528463494986,
+    0.010507902736125618,
+    0.010148424594935517,
+    0.007244723880856952,
+    0.0053095134766255,
+    0.00451541265611107,
+    0.0028216653913774757,
+    0.0026192382970087304,
+    0.0020939212628247293,
+    0.0008644964717748714,
+    1.4408458558556162e-18
+  ],
+  "cumulative_variance_ratio": [
+    0.32795046673638656,
+    0.5319020589773483,
+    0.6422161336038072,
+    0.7045866724506528,
+    0.764058820950888,
+    0.8099381637904759,
+    0.848705715228569,
+    0.8827965874670073,
+    0.9058115369501245,
+    0.9255460189020968,
+    0.9413251727688646,
+    0.9538747012323596,
+    0.9643826039684853,
+    0.9745310285634208,
+    0.9817757524442777,
+    0.9870852659209032,
+    0.9916006785770143,
+    0.9944223439683918,
+    0.9970415822654005,
+    0.9991355035282252,
+    1.0,
+    1.0
+  ],
+  "top_loading_summary": {
+    "PC1": {
+      "top_absolute_loadings": [
+        {
+          "feature": "area_median",
+          "loading": 1.0767574535170772
+        },
+        {
+          "feature": "eccentricity_iqr",
+          "loading": -1.0743019520751742
+        },
+        {
+          "feature": "area_iqr",
+          "loading": 0.6631320428785644
+        },
+        {
+          "feature": "feret_p90",
+          "loading": 0.6615018826630223
+        },
+        {
+          "feature": "solidity_iqr",
+          "loading": 0.6518595343992021
+        },
+        {
+          "feature": "aspect_ratio_median",
+          "loading": 0.5606060047893465
+        },
+        {
+          "feature": "orientation_entropy",
+          "loading": 0.5473937258979443
+        },
+        {
+          "feature": "feret_iqr",
+          "loading": 0.531487378491506
+        },
+        {
+          "feature": "circular_variance",
+          "loading": 0.4707667154976412
+        },
+        {
+          "feature": "solidity_median",
+          "loading": -0.40924909026467143
+        }
+      ]
+    },
+    "PC2": {
+      "top_absolute_loadings": [
+        {
+          "feature": "eccentricity_iqr",
+          "loading": 1.3568515647088957
+        },
+        {
+          "feature": "aspect_ratio_median",
+          "loading": 0.6105712450631979
+        },
+        {
+          "feature": "circularity_iqr",
+          "loading": 0.4736590832072491
+        },
+        {
+          "feature": "feret_iqr",
+          "loading": 0.4135613917651676
+        },
+        {
+          "feature": "orientation_entropy",
+          "loading": 0.4010853897328185
+        },
+        {
+          "feature": "circular_variance",
+          "loading": 0.3793402649456036
+        },
+        {
+          "feature": "aspect_ratio_iqr",
+          "loading": 0.3188383815242177
+        },
+        {
+          "feature": "area_iqr",
+          "loading": 0.3081010236187411
+        },
+        {
+          "feature": "eccentricity_p90",
+          "loading": 0.3052009728009612
+        },
+        {
+          "feature": "feret_p90",
+          "loading": 0.29062887596852255
+        }
+      ]
+    },
+    "PC3": {
+      "top_absolute_loadings": [
+        {
+          "feature": "mean_pixel_intensity",
+          "loading": 0.7784907508055475
+        },
+        {
+          "feature": "mean_intensity_p90",
+          "loading": 0.6340559390073952
+        },
+        {
+          "feature": "solidity_iqr",
+          "loading": -0.4662829490841197
+        },
+        {
+          "feature": "mean_intensity_iqr",
+          "loading": 0.3857973472060498
+        },
+        {
+          "feature": "num_particles",
+          "loading": -0.3036139547066544
+        },
+        {
+          "feature": "aspect_ratio_p90",
+          "loading": -0.23615006059079338
+        },
+        {
+          "feature": "solidity_median",
+          "loading": 0.21165975528119185
+        },
+        {
+          "feature": "area_median",
+          "loading": 0.20414429951275406
+        },
+        {
+          "feature": "aspect_ratio_median",
+          "loading": 0.19443984695312036
+        },
+        {
+          "feature": "circularity_iqr",
+          "loading": 0.1887992616260508
+        }
+      ]
+    },
+    "PC4": {
+      "top_absolute_loadings": [
+        {
+          "feature": "circularity_p90",
+          "loading": 0.9668132091829885
+        },
+        {
+          "feature": "eccentricity_iqr",
+          "loading": -0.1729092394486985
+        },
+        {
+          "feature": "mean_intensity_iqr",
+          "loading": -0.1632992795339802
+        },
+        {
+          "feature": "aspect_ratio_p90",
+          "loading": 0.14287379448283957
+        },
+        {
+          "feature": "num_particles",
+          "loading": -0.13664418858664892
+        },
+        {
+          "feature": "orientation_entropy",
+          "loading": -0.09379651485136412
+        },
+        {
+          "feature": "area_iqr",
+          "loading": -0.07837451848966727
+        },
+        {
+          "feature": "mean_pixel_intensity",
+          "loading": 0.07307437791957697
+        },
+        {
+          "feature": "circularity_iqr",
+          "loading": 0.06410779394046938
+        },
+        {
+          "feature": "aspect_ratio_median",
+          "loading": 0.058201030736302575
+        }
+      ]
+    },
+    "PC5": {
+      "top_absolute_loadings": [
+        {
+          "feature": "solidity_median",
+          "loading": 0.5421768529157122
+        },
+        {
+          "feature": "eccentricity_p90",
+          "loading": 0.37607069754594413
+        },
+        {
+          "feature": "num_particles",
+          "loading": 0.3705055514414829
+        },
+        {
+          "feature": "mean_pixel_intensity",
+          "loading": -0.3683723877154339
+        },
+        {
+          "feature": "eccentricity_iqr",
+          "loading": -0.28841092577837923
+        },
+        {
+          "feature": "aspect_ratio_median",
+          "loading": 0.19456690060508072
+        },
+        {
+          "feature": "circularity_iqr",
+          "loading": 0.18347781380865488
+        },
+        {
+          "feature": "orientation_entropy",
+          "loading": 0.18225727167234976
+        },
+        {
+          "feature": "mean_intensity_p90",
+          "loading": 0.14260132584562185
+        },
+        {
+          "feature": "feret_iqr",
+          "loading": -0.1401304663718003
+        }
+      ]
+    }
+  }
+}

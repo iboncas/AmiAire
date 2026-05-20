@@ -1,0 +1,39 @@
+{
+  "label": "iteration2",
+  "feature_csv": "/Users/ibon-personal/Desktop/INFOR/iteration2/output/dataset/image_features_final.csv",
+  "assignments_csv": "/Users/ibon-personal/Desktop/INFOR/iteration2/output/analysis/kmeans/assignments/pca_scores__kmeans__k-3.csv",
+  "taxonomy_suggestions_csv": "/Users/ibon-personal/Desktop/INFOR/iteration2/output/analysis/taxonomy/taxonomy_suggestions.csv",
+  "output_dir": "/Users/ibon-personal/Desktop/INFOR/iteration2/output/analysis/taxonomy_consistency",
+  "row_count_compared": 2578,
+  "row_count_skipped": 0,
+  "overall_agreement_rate": 0.35802948021722264,
+  "mean_cluster_assigned_percentage_in_temp": 24.118057282875295,
+  "mean_temp_top_percentage": 52.75890665193863,
+  "overall_temp_top_category_distribution": {
+    "mechanical_non_combustion_particulate": 228,
+    "combustion_related": 735,
+    "mixed_unknown": 653,
+    "fibrous_synthetic_materials": 705,
+    "biological": 235,
+    "industrial": 22
+  },
+  "category_names": [
+    "combustion_related",
+    "mechanical_non_combustion_particulate",
+    "biological",
+    "fibrous_synthetic_materials",
+    "industrial",
+    "mixed_unknown"
+  ],
+  "notes": [
+    "This is a consistency check, not ground truth validation.",
+    "The TEMP scorer and the cluster taxonomy use the same hand-crafted category definitions, so they are not statistically independent.",
+    "Agreement suggests internal coherence between cluster-level interpretation and row-level direct formula scoring.",
+    "Disagreement suggests within-cluster mixture, ambiguous rows, or sensitivity to aggregation at the cluster-profile level."
+  ],
+  "artifacts": {
+    "row_level_comparison_csv": "/Users/ibon-personal/Desktop/INFOR/iteration2/output/analysis/taxonomy_consistency/row_level_comparison.csv",
+    "cluster_summary_csv": "/Users/ibon-personal/Desktop/INFOR/iteration2/output/analysis/taxonomy_consistency/cluster_summary.csv",
+    "cluster_vs_temp_confusion_csv": "/Users/ibon-personal/Desktop/INFOR/iteration2/output/analysis/taxonomy_consistency/cluster_vs_temp_confusion.csv"
+  }
+}
