@@ -69,6 +69,7 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
     const [longitude, setLongitude] = useState<number | null>(null);
     const [imageBase64, setImageBase64] = useState('');
     const [imagePreview, setImagePreview] = useState('');
+    const [photoContext, setPhotoContext] = useState('');
     const [processed, setProcessed] = useState<ProcessedAnalysis | null>(null);
     const [errorMessage, setErrorMessage] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
@@ -168,6 +169,7 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
     const resetImageSelection = () => {
         setImagePreview('');
         setImageBase64('');
+        setPhotoContext('');
         setProcessed(null);
         setStepFiveView('results');
     };
@@ -201,6 +203,7 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
 
                 setImagePreview(result);
                 setImageBase64(nextImageBase64);
+                setPhotoContext('');
                 setProcessed(null);
             } catch (error) {
                 resetImageSelection();
@@ -220,6 +223,10 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
     const handleAnalyzeImage = async () => {
         if (!imageBase64) {
             setErrorMessage('Sube una imagen del sensor');
+            return;
+        }
+        if (photoContext.length === 0) {
+            setErrorMessage('Añade un contexto para la fotografía antes de analizarla.');
             return;
         }
 
@@ -245,6 +252,10 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
 
     const handleSubmit = async () => {
         if (latitude === null || longitude === null || !processed) return;
+        if (photoContext.length === 0) {
+            setErrorMessage('Añade un contexto para la fotografía antes de guardar el resultado.');
+            return;
+        }
 
         const pm10Concentration = Number(
             processed.pollutionData?.PM10?.concentration_standard ??
@@ -280,6 +291,7 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
                 concentration: legacyConcentration,
                 pollutionLevel: legacyPollutionLevel,
                 inputImageB64: imageBase64,
+                context: photoContext,
                 analysisResults: {
                     numContours: Number(processed.analysisResults?.num_contours || 0),
                     areaPercentage: Number(processed.analysisResults?.area_percentage || 0),
@@ -528,15 +540,36 @@ export default function ParticleAnalysisPage({ onOpenMap }: ParticleAnalysisPage
                             </p>
                         )}
                         {imagePreview && (
-                            <img
-                                src={imagePreview}
-                                alt="Vista previa"
-                                className="max-h-[320px] rounded border border-gray-200"
-                            />
+                            <>
+                                <img
+                                    src={imagePreview}
+                                    alt="Vista previa"
+                                    className="max-h-[320px] rounded border border-gray-200"
+                                />
+                                <div>
+                                    <label htmlFor="photo-context" className="block text-sm font-medium text-gray-800">
+                                        Contexto de la fotografía <span className="text-red-600">*</span>
+                                    </label>
+                                    <p className="mt-1 text-sm leading-6 text-gray-700">
+                                        ¿Quieres añadir algo de contexto sobre la foto? Por ejemplo: si hubo mucho sol,
+                                        si el sensor estaba mojado o manchado, o si la cantidad de partículas te pareció
+                                        mayor o menor de lo esperado.
+                                    </p>
+                                    <textarea
+                                        id="photo-context"
+                                        value={photoContext}
+                                        onChange={(e) => setPhotoContext(e.target.value)}
+                                        required
+                                        rows={4}
+                                        className="mt-2 w-full rounded border border-gray-300 px-3 py-2"
+                                        placeholder="Escribe aquí tus observaciones"
+                                    />
+                                </div>
+                            </>
                         )}
                         <button
                             type="submit"
-                            disabled={isProcessing || isValidatingImage}
+                            disabled={isProcessing || isValidatingImage || (Boolean(imageBase64) && photoContext.length === 0)}
                             className="px-4 py-2 rounded bg-ami-azul text-white disabled:opacity-50"
                         >
                             {isProcessing ? 'Analizando...' : 'Analizar imagen'}

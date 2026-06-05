@@ -98,6 +98,7 @@ router.post('/experimentos', async (req, res) => {
             pm10Concentration,
             pm25Concentration,
             inputImageB64,
+            context,
             analysisResults,
             taxonomyModel,
         } = req.body || {};
@@ -126,6 +127,12 @@ router.post('/experimentos', async (req, res) => {
 
         const pm10Value = resolvedPm10;
         const pm25Value = resolvedPm25;
+        if (typeof context !== 'string' || context.length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'Falta el contexto de la fotografía',
+            });
+        }
 
         const db = getDatabase();
         const collection = db.collection(process.env.MONGODB_COLLECTION || 'records');
@@ -142,6 +149,7 @@ router.post('/experimentos', async (req, res) => {
             'PM2.5': pm25Value,
             'Posibles fuentes contaminantes': taxonomyModel || null,
             'Imagen de entrada': inputImageUrl,
+            context,
         };
 
         const result = await collection.insertOne(doc);

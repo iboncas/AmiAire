@@ -393,6 +393,7 @@ export async function submitExperiment(payload: {
     concentration?: number;
     pollutionLevel?: string;
     inputImageB64: string;
+    context: string;
     analysisResults: {
         numContours: number;
         areaPercentage: number;
