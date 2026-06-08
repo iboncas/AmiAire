@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import MapContainer from '../Map/MapContainer';
 import FilterControls from '../Map/FilterControls';
 import Legend from '../Legend';
@@ -17,6 +17,14 @@ interface MapPageProps {
     isActive: boolean;
 }
 
+interface SearchState {
+    city: string;
+    radius: number;
+    startDate: string;
+    endDate: string;
+    center: { lat: number; lon: number } | null;
+}
+
 const TAXONOMY_CATEGORY_DESCRIPTIONS: Record<string, string> = {
     combustion_related:
         'Suele agrupar partículas pequeñas y compactas, compatibles con procesos de combustión. Puede relacionarse con tráfico, humo u otras emisiones por quema.',
@@ -30,6 +38,47 @@ const TAXONOMY_CATEGORY_DESCRIPTIONS: Record<string, string> = {
         'Agrupa partículas con patrones compatibles con procesos industriales. Puede reflejar mezclas complejas asociadas a manufactura, manipulación o emisiones técnicas.',
     mixed_unknown:
         'Indica una mezcla poco definida de rasgos morfológicos. Se usa cuando no hay una afinidad clara con una sola categoría interpretativa.',
+};
+
+const applyFilters = (
+    sensors: Sensor[],
+    searchState: SearchState,
+    diy: boolean,
+    official: boolean
+) => {
+    return sensors.filter((sensor) => {
+        if (sensor.type === 'diy' && !diy) return false;
+        if (sensor.type === 'official' && !official) return false;
+
+        let ok = true;
+
+        if (searchState.center && searchState.radius) {
+            const { latitud, longitud } = sensor.ubicacion;
+            const distance = haversineKm(
+                searchState.center.lat,
+                searchState.center.lon,
+                latitud,
+                longitud
+            );
+            ok = distance <= searchState.radius;
+        }
+
+        const hasStart = Boolean(searchState.startDate);
+        const hasEnd = Boolean(searchState.endDate);
+        if (ok && (hasStart || hasEnd)) {
+            const sensorStart = sensor.fechaInicio ? new Date(sensor.fechaInicio) : null;
+            const sensorEnd = sensor.fechaRecogida ? new Date(sensor.fechaRecogida) : null;
+            const start = hasStart ? new Date(`${searchState.startDate}T00:00:00.000Z`) : null;
+            const end = hasEnd ? new Date(`${searchState.endDate}T23:59:59.999Z`) : null;
+            const validStart = sensorStart instanceof Date && !Number.isNaN(sensorStart.getTime());
+            const validEnd = sensorEnd instanceof Date && !Number.isNaN(sensorEnd.getTime());
+
+            if (hasStart && validStart) ok = sensorStart! >= start!;
+            if (ok && hasEnd && validEnd) ok = sensorEnd! <= end!;
+        }
+
+        return ok;
+    });
 };
 
 export default function MapPage({ isActive }: MapPageProps) {
@@ -46,13 +95,7 @@ export default function MapPage({ isActive }: MapPageProps) {
     } | null>(null);
     const [showDIY, setShowDIY] = useState(true);
     const [showOfficial, setShowOfficial] = useState(true);
-    const [activeSearch, setActiveSearch] = useState<{
-        city: string;
-        radius: number;
-        startDate: string;
-        endDate: string;
-        center: { lat: number; lon: number } | null;
-    }>({
+    const [activeSearch, setActiveSearch] = useState<SearchState>({
         city: '',
         radius: 10,
         startDate: '',
@@ -60,25 +103,16 @@ export default function MapPage({ isActive }: MapPageProps) {
         center: null,
     });
 
-    useEffect(() => {
-        loadSensors();
-    }, []);
-
-    useEffect(() => {
-        if (!isActive) return;
-        void loadSensors();
-    }, [isActive]);
-
-    const refreshOfficialSensors = async (startDate?: string, endDate?: string) => {
+    const refreshOfficialSensors = useCallback(async (startDate?: string, endDate?: string) => {
         const official = await fetchEstacionesOficiales(startDate, endDate);
         const normalizedOfficial = official.map((s) => ({ ...s, type: 'official' as const }));
         setAllSensors((prev) => {
             const diy = prev.filter((sensor) => sensor.type !== 'official');
             return [...diy, ...normalizedOfficial];
         });
-    };
+    }, []);
 
-    const loadSensors = async () => {
+    const loadSensors = useCallback(async () => {
         setIsLoading(true);
         try {
             const [diySensorsResult, officialSensorsResult] = await Promise.allSettled([
@@ -101,56 +135,22 @@ export default function MapPage({ isActive }: MapPageProps) {
             ];
 
             setAllSensors(all);
-            const filtered = applyFilters(all, activeSearch, showDIY, showOfficial);
-            setFilteredSensors(filtered);
         } catch (error) {
             console.error('Error loading sensors:', error);
             alert('Error al cargar los sensores');
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
 
-    const applyFilters = (
-        sensors: Sensor[],
-        searchState: typeof activeSearch,
-        diy: boolean,
-        official: boolean
-    ) => {
-        return sensors.filter((sensor) => {
-            if (sensor.type === 'diy' && !diy) return false;
-            if (sensor.type === 'official' && !official) return false;
+    useEffect(() => {
+        void loadSensors();
+    }, [loadSensors]);
 
-            let ok = true;
-
-            if (searchState.center && searchState.radius) {
-                const { latitud, longitud } = sensor.ubicacion;
-                const distance = haversineKm(
-                    searchState.center.lat,
-                    searchState.center.lon,
-                    latitud,
-                    longitud
-                );
-                ok = distance <= searchState.radius;
-            }
-
-            const hasStart = Boolean(searchState.startDate);
-            const hasEnd = Boolean(searchState.endDate);
-            if (ok && (hasStart || hasEnd)) {
-                const sensorStart = sensor.fechaInicio ? new Date(sensor.fechaInicio) : null;
-                const sensorEnd = sensor.fechaRecogida ? new Date(sensor.fechaRecogida) : null;
-                const start = hasStart ? new Date(`${searchState.startDate}T00:00:00.000Z`) : null;
-                const end = hasEnd ? new Date(`${searchState.endDate}T23:59:59.999Z`) : null;
-                const validStart = sensorStart instanceof Date && !Number.isNaN(sensorStart.getTime());
-                const validEnd = sensorEnd instanceof Date && !Number.isNaN(sensorEnd.getTime());
-
-                if (hasStart && validStart) ok = sensorStart! >= start!;
-                if (ok && hasEnd && validEnd) ok = sensorEnd! <= end!;
-            }
-
-            return ok;
-        });
-    };
+    useEffect(() => {
+        if (!isActive) return;
+        void loadSensors();
+    }, [isActive, loadSensors]);
 
     useEffect(() => {
         const filtered = applyFilters(allSensors, activeSearch, showDIY, showOfficial);

@@ -26,11 +26,13 @@ export default function MapContainer({
     const mapRef = useRef<L.Map | null>(null);
     const markerLayerRef = useRef<L.LayerGroup | null>(null);
     const circleRef = useRef<L.Circle | null>(null);
+    const initialCenterRef = useRef(center);
+    const initialZoomRef = useRef(zoom);
 
     // Initialize map
     useEffect(() => {
         if (!mapRef.current) {
-            const map = L.map('map').setView(center, zoom);
+            const map = L.map('map').setView(initialCenterRef.current, initialZoomRef.current);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© OpenStreetMap',
             }).addTo(map);
